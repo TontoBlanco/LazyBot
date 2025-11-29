@@ -1,4 +1,4 @@
-﻿import time
+import time
 import pyautogui
 from PIL import ImageGrab
 import os
@@ -6,6 +6,7 @@ import shutil
 import datetime
 import numpy as np
 import psutil
+import requests
 
 # =====================================
 # CONFIGURATION – EDIT THESE VALUES
@@ -24,11 +25,148 @@ DOLPHIN_SCREEN_BBOX = (100, 100, 580, 420)  # Dolphin game screen bbox - tune (u
 MGBA_SCREEN_BBOX = (0, 30, 240, 190)  # mGBA game screen bbox - tune for your window (GBA is 240x160)
 TAG_AREA_REL = (71, 228, 91, 248)  # Tag area relative to SCREEN_BBOX - retune for mGBA if needed
 DOLPHIN_EXE_NAME = "Dolphin.exe"  # For killing if needed
+MGBA_CONTROL_MODE = "http"  # Options: "http" to use mGBA-http, "gui" to fall back to pyautogui
+MGBA_HTTP_BASE_URL = "http://localhost:5000"
+MGBA_HTTP_TIMEOUT = 5.0
+MGBA_HTTP_RETRIES = 3
+MGBA_HTTP_RETRY_DELAY = 0.5
+GBA_MENU_BUTTON = "Start"
+GBA_ACTION_BUTTON = "A"
+GBA_BACK_BUTTON = "B"
+
+# =====================================
+# mGBA-http CLIENT
+# =====================================
+class MgbaHttpClient:
+    def __init__(self,
+                 base_url=MGBA_HTTP_BASE_URL,
+                 timeout=MGBA_HTTP_TIMEOUT,
+                 retries=MGBA_HTTP_RETRIES,
+                 retry_delay=MGBA_HTTP_RETRY_DELAY):
+        self.base_url = base_url.rstrip("/")
+        self.timeout = timeout
+        self.retries = retries
+        self.retry_delay = retry_delay
+        self.session = requests.Session()
+
+    def _request(self, method, path, params=None, data=None):
+        url = f"{self.base_url}{path}"
+        last_error = None
+        for attempt in range(1, self.retries + 1):
+            try:
+                response = self.session.request(
+                    method=method,
+                    url=url,
+                    params=params,
+                    data=data,
+                    timeout=self.timeout,
+                )
+                response.raise_for_status()
+                return response.text.strip()
+            except requests.RequestException as exc:
+                last_error = exc
+                if attempt < self.retries:
+                    time.sleep(self.retry_delay)
+                else:
+                    break
+        raise RuntimeError(f"mGBA-http request failed for {method.upper()} {path}: {last_error}") from last_error
+
+    def load_rom(self, rom_path):
+        return self._request("post", "/mgba-http/extension/loadfile", params={"path": rom_path})
+
+    def load_state_file(self, state_path, flags=29):
+        params = {"path": state_path, "flags": flags}
+        return self._request("post", "/core/loadstatefile", params=params)
+
+    def save_state_file(self, state_path, flags=31):
+        params = {"path": state_path, "flags": flags}
+        return self._request("post", "/core/savestatefile", params=params)
+
+    def tap_button(self, button):
+        return self._request("post", "/mgba-http/button/tap", params={"button": button})
+
+    def tap_buttons(self, buttons):
+        if not buttons:
+            return ""
+        params = [("buttons", btn) for btn in buttons]
+        return self._request("post", "/mgba-http/button/tapmany", params=params)
+
+    def hold_button(self, button, duration_frames):
+        params = {"button": button, "duration": duration_frames}
+        return self._request("post", "/mgba-http/button/hold", params=params)
+
+    def hold_buttons(self, buttons, duration_frames):
+        params = [("buttons", btn) for btn in buttons]
+        params.append(("duration", duration_frames))
+        return self._request("post", "/mgba-http/button/holdmany", params=params)
+
+    def set_keys(self, bitmask):
+        return self._request("post", "/core/setkeys", params={"keys": bitmask})
+
+    def add_keys(self, bitmask):
+        return self._request("post", "/core/addkeys", params={"keyBitmask": bitmask})
+
+    def clear_keys(self, bitmask):
+        return self._request("post", "/core/clearkeys", params={"keyBitmask": bitmask})
+
+    def step(self, frames=1):
+        for _ in range(frames):
+            self._request("post", "/core/step")
+
+    def reset_core(self):
+        return self._request("post", "/coreadapter/reset")
+
+
+MGBA_HTTP_CLIENT = None
+if MGBA_CONTROL_MODE.lower() == "http":
+    try:
+        MGBA_HTTP_CLIENT = MgbaHttpClient()
+        print(f"[mGBA-http] Client initialised for {MGBA_HTTP_BASE_URL}")
+    except Exception as client_error:
+        print(f"[mGBA-http] Failed to initialize client: {client_error}")
+        MGBA_HTTP_CLIENT = None
+        MGBA_CONTROL_MODE = "gui"
+
+# =====================================
+# HELPER UTILITIES
+# =====================================
+def _ensure_http_client():
+    if MGBA_HTTP_CLIENT is None:
+        raise RuntimeError("mGBA-http client is not initialised. Ensure MGBA_CONTROL_MODE is set to 'http' and the server is running.")
+
+
+def http_tap(button, count=1, delay=0.2):
+    _ensure_http_client()
+    for _ in range(count):
+        MGBA_HTTP_CLIENT.tap_button(button)
+        time.sleep(delay)
+
+
+def http_step_frames(frames=1, delay=0.0):
+    _ensure_http_client()
+    MGBA_HTTP_CLIENT.step(frames)
+    if delay:
+        time.sleep(delay)
+
+
+def http_sequence(sequence):
+    """
+    sequence: iterable of (button, count, delay_between_taps)
+    """
+    for button, count, delay in sequence:
+        http_tap(button, count=count, delay=delay)
 
 # =====================================
 # CORE FUNCTIONS
 # =====================================
 def focus_and_load_rom():
+    if MGBA_CONTROL_MODE.lower() == "http":
+        _ensure_http_client()
+        MGBA_HTTP_CLIENT.load_rom(ROM_PATH)
+        time.sleep(1)
+        print("Loaded ROM in mGBA via HTTP.")
+        return
+
     pyautogui.click(MGBA_CLICK)
     time.sleep(10)
     pyautogui.hotkey('ctrl', 'o')
@@ -51,6 +189,11 @@ def focus_and_load_iso():
     print("Loaded ISO in Dolphin.")
 
 def advance_frame():
+    if MGBA_CONTROL_MODE.lower() == "http":
+        http_step_frames(1, delay=0.1)
+        print("Advanced frame in mGBA via HTTP.")
+        return
+
     pyautogui.click(MGBA_CLICK)  # Ensure focus
     time.sleep(10)
     pyautogui.press('n')
@@ -58,6 +201,18 @@ def advance_frame():
     print("Advanced frame in mGBA.")
 
 def save_at_new_frame():
+    if MGBA_CONTROL_MODE.lower() == "http":
+        sequence = [
+            (GBA_MENU_BUTTON, 1, 0.4),  # Open pause menu
+            ("Down", 5, 0.25),          # Navigate to Save (tune if needed)
+            (GBA_ACTION_BUTTON, 1, 0.6),
+            (GBA_ACTION_BUTTON, 1, 0.6),  # Confirm save prompts
+        ]
+        http_sequence(sequence)
+        time.sleep(1.5)
+        print("Saved in mGBA via HTTP.")
+        return
+
     pyautogui.click(MGBA_CLICK)  # Ensure focus
     time.sleep(10)
     for _ in range(3):
@@ -118,6 +273,13 @@ def close_dolphin_game():
     print("Closed game in Dolphin.")
 
 def close_mgba_rom():
+    if MGBA_CONTROL_MODE.lower() == "http":
+        _ensure_http_client()
+        MGBA_HTTP_CLIENT.reset_core()
+        time.sleep(0.5)
+        print("Reset/closed ROM in mGBA via HTTP.")
+        return
+
     pyautogui.click(MGBA_CLICK)  # Ensure focus
     time.sleep(10)
     pyautogui.hotkey('ctrl', 'k')
@@ -125,6 +287,19 @@ def close_mgba_rom():
     print("Closed ROM in mGBA.")
 
 def open_summary_for_check():
+    if MGBA_CONTROL_MODE.lower() == "http":
+        sequence = [
+            (GBA_MENU_BUTTON, 1, 0.4),  # Open pause menu
+            (GBA_ACTION_BUTTON, 1, 0.4),  # Select Pokémon (assumes default cursor)
+            (GBA_ACTION_BUTTON, 1, 0.4),  # Choose first Pokémon
+            ("Down", 4, 0.25),           # Navigate to Summary
+            (GBA_ACTION_BUTTON, 1, 0.4),  # Open Summary
+        ]
+        http_sequence(sequence)
+        time.sleep(2)
+        print("Opened summary in mGBA via HTTP for check.")
+        return
+
     pyautogui.click(MGBA_CLICK)  # Ensure focus
     time.sleep(10)
     for _ in range(3):
