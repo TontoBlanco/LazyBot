@@ -38,6 +38,7 @@ GBA_BACK_BUTTON = "B"
 # mGBA-http CLIENT
 # =====================================
 class MgbaHttpClient:
+    """Thin wrapper around the mGBA-http REST API with retry handling."""
     def __init__(self,
                  base_url=MGBA_HTTP_BASE_URL,
                  timeout=MGBA_HTTP_TIMEOUT,
@@ -50,6 +51,7 @@ class MgbaHttpClient:
         self.session = requests.Session()
 
     def _request(self, method, path, params=None, data=None):
+        """Send a single HTTP request with retries and bubble up the final error."""
         url = f"{self.base_url}{path}"
         last_error = None
         for attempt in range(1, self.retries + 1):
@@ -131,11 +133,13 @@ if MGBA_CONTROL_MODE.lower() == "http":
 # HELPER UTILITIES
 # =====================================
 def _ensure_http_client():
+    """Guard to make sure HTTP mode only runs when the client connected successfully."""
     if MGBA_HTTP_CLIENT is None:
         raise RuntimeError("mGBA-http client is not initialised. Ensure MGBA_CONTROL_MODE is set to 'http' and the server is running.")
 
 
 def http_tap(button, count=1, delay=0.2):
+    """Tap the same virtual GBA button multiple times with a configurable pause."""
     _ensure_http_client()
     for _ in range(count):
         MGBA_HTTP_CLIENT.tap_button(button)
@@ -143,6 +147,7 @@ def http_tap(button, count=1, delay=0.2):
 
 
 def http_step_frames(frames=1, delay=0.0):
+    """Advance emulation by a number of single-instruction steps."""
     _ensure_http_client()
     MGBA_HTTP_CLIENT.step(frames)
     if delay:
@@ -151,6 +156,8 @@ def http_step_frames(frames=1, delay=0.0):
 
 def http_sequence(sequence):
     """
+    Execute a higher-level menu macro.
+
     sequence: iterable of (button, count, delay_between_taps)
     """
     for button, count, delay in sequence:
@@ -160,6 +167,7 @@ def http_sequence(sequence):
 # CORE FUNCTIONS
 # =====================================
 def focus_and_load_rom():
+    """Load the configured ROM either via HTTP or GUI automation."""
     if MGBA_CONTROL_MODE.lower() == "http":
         _ensure_http_client()
         MGBA_HTTP_CLIENT.load_rom(ROM_PATH)
@@ -178,6 +186,7 @@ def focus_and_load_rom():
     print("Loaded ROM in mGBA.")
 
 def focus_and_load_iso():
+    """Bring Dolphin to the foreground and load the ISO via Ctrl+O."""
     pyautogui.click(DOLPHIN_CLICK)
     time.sleep(10)
     pyautogui.hotkey('ctrl', 'o')
@@ -189,6 +198,7 @@ def focus_and_load_iso():
     print("Loaded ISO in Dolphin.")
 
 def advance_frame():
+    """Advance the GBA timeline by one step to create a new seed."""
     if MGBA_CONTROL_MODE.lower() == "http":
         http_step_frames(1, delay=0.1)
         print("Advanced frame in mGBA via HTTP.")
@@ -201,6 +211,7 @@ def advance_frame():
     print("Advanced frame in mGBA.")
 
 def save_at_new_frame():
+    """Perform the in-game save routine so the new frame lands on disk."""
     if MGBA_CONTROL_MODE.lower() == "http":
         sequence = [
             (GBA_MENU_BUTTON, 1, 0.4),  # Open pause menu
@@ -242,6 +253,7 @@ def save_at_new_frame():
     # print("Alternative save completed in mGBA.")
 
 def auto_transfer_dolphin():
+    """Execute the button rhythm inside Dolphin to trigger the Jirachi transfer."""
     pyautogui.click(DOLPHIN_CLICK)  # Ensure focus
     time.sleep(10)
     pyautogui.press('left')  # Your specified arrow
@@ -264,6 +276,7 @@ def auto_transfer_dolphin():
     print("Transfer completed in Dolphin.")
 
 def close_dolphin_game():
+    """Exit the currently running Dolphin game via on-screen hotkeys."""
     pyautogui.click(DOLPHIN_CLICK)  # Ensure focus
     time.sleep(10)
     pyautogui.press('-')
@@ -273,6 +286,7 @@ def close_dolphin_game():
     print("Closed game in Dolphin.")
 
 def close_mgba_rom():
+    """Reset/close mGBA so the save file is flushed before leaving."""
     if MGBA_CONTROL_MODE.lower() == "http":
         _ensure_http_client()
         MGBA_HTTP_CLIENT.reset_core()
@@ -287,6 +301,7 @@ def close_mgba_rom():
     print("Closed ROM in mGBA.")
 
 def open_summary_for_check():
+    """Navigate through the in-game menus until the Pokémon summary screen is shown."""
     if MGBA_CONTROL_MODE.lower() == "http":
         sequence = [
             (GBA_MENU_BUTTON, 1, 0.4),  # Open pause menu
@@ -321,6 +336,7 @@ def open_summary_for_check():
     print("Opened summary in mGBA for check.")
 
 def detect_shiny_color(bbox=MGBA_SCREEN_BBOX):
+    """Sample the summary tag pixels and decide whether they match the red shiny palette."""
     try:
         img = ImageGrab.grab(bbox=bbox)
         tag_img = img.crop(TAG_AREA_REL)
@@ -339,6 +355,7 @@ def detect_shiny_color(bbox=MGBA_SCREEN_BBOX):
         return False
 
 def backup_save_files():
+    """Copy both the active mGBA and Dolphin saves into timestamped backups."""
     if not os.path.exists(BACKUP_DIR):
         os.makedirs(BACKUP_DIR)
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -352,6 +369,7 @@ def backup_save_files():
         print(f"Backed up Dolphin save to: {backup_srm}")
 
 def kill_dolphin():
+    """Forcefully terminate the Dolphin process if it stalls."""
     for proc in psutil.process_iter():
         if proc.name() == DOLPHIN_EXE_NAME:
             proc.kill()
@@ -360,6 +378,7 @@ def kill_dolphin():
             break
 
 def get_trial_number():
+    """Increment and persist a simple attempt counter used for naming .sav archives."""
     trial_count_file = "trial_count.txt"  # Simple counter file
     if os.path.exists(trial_count_file):
         with open(trial_count_file, 'r') as f:
@@ -386,6 +405,7 @@ input("Press Enter to start...")
 attempt = 1
 while True:
     print(f"Attempt {attempt} started.")
+    # ---- Step 1: Restore the pristine target save into mGBA's folder ----
     
     # Step 1: Copy original sav to mGBA path
     if os.path.exists(ORIGINAL_BACKUP):
@@ -395,13 +415,13 @@ while True:
         print("ERROR: Original backup not found - check path.")
         break
     
-    # Load ROM in mGBA, advance frame, save, close
+    # ---- Step 2: Load ROM, advance by a frame, save, then close mGBA ----
     focus_and_load_rom()
     advance_frame()
     save_at_new_frame()
     close_mgba_rom()
     
-    # Step 2: Move sav to Dolphin path
+    # ---- Step 3: Move the fresh save into Dolphin's shared GBA slot ----
     if os.path.exists(SAVE_PATH):
         shutil.move(SAVE_PATH, DOLPHIN_SAV_PATH)
         print("Moved save to Dolphin path.")
@@ -409,24 +429,24 @@ while True:
         print("ERROR: Save file not found after save - check mGBA settings.")
         break
     
-    # Step 3: Load ISO in Dolphin
+    # ---- Step 4: Launch the ISO and run the scripted transfer ----
     focus_and_load_iso()
     
-    # Step 4: Transfer
+    # ---- Step 5: Execute the menu rhythm that initiates the Jirachi gift ----
     auto_transfer_dolphin()
     
-    # Step 5: Close Dolphin game
+    # ---- Step 6: Close Dolphin to flush its save ----
     close_dolphin_game()
     # kill_dolphin()  # Uncomment if close fails
     
-    # Step 6: Copy Dolphin sav back to mGBA path
+    # ---- Step 7: Bring the Dolphin save back into mGBA territory ----
     shutil.copy(DOLPHIN_SAV_PATH, SAVE_PATH)
     print("Copied Dolphin save back to mGBA path.")
     
-    # Step 7: Load ROM in mGBA
+    # ---- Step 8: Reopen the ROM in mGBA to examine the result ----
     focus_and_load_rom()
     
-    # Step 8: Open summary and check if shiny via color
+    # ---- Step 9: Inspect the summary page to check the ribbon colour ----
     open_summary_for_check()
     if detect_shiny_color():
         print("\n*** SHINY JIRACHI FOUND! ***\n")
@@ -435,7 +455,7 @@ while True:
         input("Press Enter to exit...")
         break
     else:
-        # Step 10: Not shiny - close ROM, move to Just_In_Case
+        # ---- Step 10: Not shiny – archive the save for reference ----
         close_mgba_rom()
         if not os.path.exists(JUST_IN_CASE_DIR):
             os.makedirs(JUST_IN_CASE_DIR)
