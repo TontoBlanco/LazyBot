@@ -12,7 +12,7 @@ import requests
 # CONFIGURATION – EDIT THESE VALUES
 # =====================================
 ROM_PATH = r"C:\mGBA\ROMs\PokemonSapphire.gba"  # Full path to ROM
-ISO_PATH = r"C:\Dolphin\Games\Pokemon Colosseum Bonus Disc.iso"  # Full path to ISO
+ISO_PATH = r"C:\Users\colem\OneDrive\Desktop\PokemonColosseumBonusDisk.iso"  # Full path to ISO
 SAVE_PATH = r"C:\mGBA\ROMs\PokemonSapphire.sav"  # mGBA save path
 STATE_PATH = r"C:\mGBA\ROMs\PokemonSapphire.ss1"  # Optional savestate path if needed
 DOLPHIN_SAV_PATH = r"C:\Users\colem\AppData\Roaming\Dolphin Emulator\GBA\Saves\Pokemon - Sapphire Version (USA, Europe)-2.sav"  # Dolphin save path
