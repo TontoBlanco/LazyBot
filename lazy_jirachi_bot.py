@@ -172,6 +172,8 @@ def focus_and_load_rom():
     if MGBA_CONTROL_MODE.lower() == "http":
         _ensure_http_client()
         MGBA_HTTP_CLIENT.load_rom(ROM_PATH)
+        if STATE_PATH and os.path.exists(STATE_PATH):
+            MGBA_HTTP_CLIENT.load_state_file(STATE_PATH)
         time.sleep(1)
         print("Loaded ROM in mGBA via HTTP.")
         return
