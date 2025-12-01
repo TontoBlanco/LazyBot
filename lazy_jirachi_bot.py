@@ -224,6 +224,8 @@ def save_at_new_frame():
         ]
         http_sequence(sequence)
         time.sleep(1.5)
+        if STATE_PATH:
+            MGBA_HTTP_CLIENT.save_state_file(STATE_PATH)
         print("Saved in mGBA via HTTP.")
         return
 
@@ -402,28 +404,22 @@ print("Position mGBA top-left, Dolphin right. Emulators open but unloaded.")
 print("=================================")
 print(f"Debug: SAVE_PATH is {SAVE_PATH}, exists: {os.path.exists(SAVE_PATH)}")
 print(f"Debug: ORIGINAL_BACKUP is {ORIGINAL_BACKUP}, exists: {os.path.exists(ORIGINAL_BACKUP)}")
+if not os.path.exists(SAVE_PATH) and os.path.exists(ORIGINAL_BACKUP):
+    shutil.copy(ORIGINAL_BACKUP, SAVE_PATH)
+    print("Working save missing; restored from original backup.")
 input("Press Enter to start...")
 
 attempt = 1
 while True:
     print(f"Attempt {attempt} started.")
-    # ---- Step 1: Restore the pristine target save into mGBA's folder ----
     
-    # Step 1: Copy original sav to mGBA path
-    if os.path.exists(ORIGINAL_BACKUP):
-        shutil.copy(ORIGINAL_BACKUP, SAVE_PATH)
-        print(f"Debug: Copied to SAVE_PATH, now exists: {os.path.exists(SAVE_PATH)}")
-    else:
-        print("ERROR: Original backup not found - check path.")
-        break
-    
-    # ---- Step 2: Load ROM, advance by a frame, save, then close mGBA ----
+    # ---- Step 1: Load ROM, advance by a frame, save, then close mGBA ----
     focus_and_load_rom()
     advance_frame()
     save_at_new_frame()
     close_mgba_rom()
     
-    # ---- Step 3: Move the fresh save into Dolphin's shared GBA slot ----
+    # ---- Step 2: Move the fresh save into Dolphin's shared GBA slot ----
     if os.path.exists(SAVE_PATH):
         shutil.move(SAVE_PATH, DOLPHIN_SAV_PATH)
         print("Moved save to Dolphin path.")
@@ -431,24 +427,24 @@ while True:
         print("ERROR: Save file not found after save - check mGBA settings.")
         break
     
-    # ---- Step 4: Launch the ISO and run the scripted transfer ----
+    # ---- Step 3: Launch the ISO and run the scripted transfer ----
     focus_and_load_iso()
     
-    # ---- Step 5: Execute the menu rhythm that initiates the Jirachi gift ----
+    # ---- Step 4: Execute the menu rhythm that initiates the Jirachi gift ----
     auto_transfer_dolphin()
     
-    # ---- Step 6: Close Dolphin to flush its save ----
+    # ---- Step 5: Close Dolphin to flush its save ----
     close_dolphin_game()
     # kill_dolphin()  # Uncomment if close fails
     
-    # ---- Step 7: Bring the Dolphin save back into mGBA territory ----
+    # ---- Step 6: Bring the Dolphin save back into mGBA territory ----
     shutil.copy(DOLPHIN_SAV_PATH, SAVE_PATH)
     print("Copied Dolphin save back to mGBA path.")
     
-    # ---- Step 8: Reopen the ROM in mGBA to examine the result ----
+    # ---- Step 7: Reopen the ROM in mGBA to examine the result ----
     focus_and_load_rom()
     
-    # ---- Step 9: Inspect the summary page to check the ribbon colour ----
+    # ---- Step 8: Inspect the summary page to check the ribbon colour ----
     open_summary_for_check()
     if detect_shiny_color():
         print("\n*** SHINY JIRACHI FOUND! ***\n")
@@ -457,7 +453,7 @@ while True:
         input("Press Enter to exit...")
         break
     else:
-        # ---- Step 10: Not shiny – archive the save for reference ----
+        # ---- Step 9: Not shiny – archive the save for reference ----
         close_mgba_rom()
         if not os.path.exists(JUST_IN_CASE_DIR):
             os.makedirs(JUST_IN_CASE_DIR)
