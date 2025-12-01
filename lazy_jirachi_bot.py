@@ -34,7 +34,7 @@ MGBA_HTTP_RETRY_DELAY = 0.5
 GBA_MENU_BUTTON = "Start"
 GBA_ACTION_BUTTON = "A"
 GBA_BACK_BUTTON = "B"
-GBA_SAVE_MENU_DOWN_PRESSES = 4  # Number of downs needed to highlight Save
+GBA_SAVE_MENU_DOWN_PRESSES = 5  # Number of downs needed to highlight Save
 
 # =====================================
 # mGBA-http CLIENT
