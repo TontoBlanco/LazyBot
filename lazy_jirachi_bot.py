@@ -34,6 +34,7 @@ MGBA_HTTP_RETRY_DELAY = 0.5
 GBA_MENU_BUTTON = "Start"
 GBA_ACTION_BUTTON = "A"
 GBA_BACK_BUTTON = "B"
+GBA_SAVE_MENU_DOWN_PRESSES = 4  # Number of downs needed to highlight Save
 
 # =====================================
 # mGBA-http CLIENT
@@ -218,7 +219,7 @@ def save_at_new_frame():
     if MGBA_CONTROL_MODE.lower() == "http":
         sequence = [
             (GBA_MENU_BUTTON, 1, 0.4),  # Open pause menu
-            ("Down", 5, 0.25),          # Navigate to Save (tune if needed)
+            ("Down", GBA_SAVE_MENU_DOWN_PRESSES, 0.25),  # Navigate to Save
             (GBA_ACTION_BUTTON, 1, 0.6),
             (GBA_ACTION_BUTTON, 1, 0.6),  # Confirm save prompts
         ]
