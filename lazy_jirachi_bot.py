@@ -404,9 +404,6 @@ print("Position mGBA top-left, Dolphin right. Emulators open but unloaded.")
 print("=================================")
 print(f"Debug: SAVE_PATH is {SAVE_PATH}, exists: {os.path.exists(SAVE_PATH)}")
 print(f"Debug: ORIGINAL_BACKUP is {ORIGINAL_BACKUP}, exists: {os.path.exists(ORIGINAL_BACKUP)}")
-if not os.path.exists(SAVE_PATH) and os.path.exists(ORIGINAL_BACKUP):
-    shutil.copy(ORIGINAL_BACKUP, SAVE_PATH)
-    print("Working save missing; restored from original backup.")
 input("Press Enter to start...")
 
 attempt = 1
