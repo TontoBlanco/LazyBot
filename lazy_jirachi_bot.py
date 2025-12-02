@@ -36,6 +36,7 @@ GBA_MENU_BUTTON = "Start"
 GBA_ACTION_BUTTON = "A"
 GBA_BACK_BUTTON = "B"
 GBA_SAVE_MENU_DOWN_PRESSES = 5  # Number of downs needed to highlight Save
+PAUSE_SENTINEL_PATH = os.path.join(os.getcwd(), "lazy_bot.pause")
 
 # =====================================
 # mGBA-http CLIENT
@@ -177,6 +178,16 @@ def send_hotkey(*keys, interval=0.02):
     for key in reversed(keys):
         pyautogui.keyUp(key)
         time.sleep(interval)
+
+
+def wait_if_paused():
+    """Pause the automation when the sentinel file exists."""
+    has_announced = False
+    while os.path.exists(PAUSE_SENTINEL_PATH):
+        if not has_announced:
+            print(f"Paused. Remove {PAUSE_SENTINEL_PATH} to resume.")
+            has_announced = True
+        time.sleep(1.5)
 
 # =====================================
 # CORE FUNCTIONS
@@ -422,6 +433,7 @@ input("Press Enter to start...")
 
 attempt = 1
 while True:
+    wait_if_paused()
     print(f"Attempt {attempt} started.")
     
     # ---- Step 1: Load ROM, advance by a frame, save, then close mGBA ----
@@ -439,9 +451,11 @@ while True:
         break
     
     # ---- Step 3: Launch the ISO and run the scripted transfer ----
+    wait_if_paused()
     focus_and_load_iso()
     
     # ---- Step 4: Execute the menu rhythm that initiates the Jirachi gift ----
+    wait_if_paused()
     auto_transfer_dolphin()
     
     # ---- Step 5: Close Dolphin to flush its save ----
@@ -453,9 +467,11 @@ while True:
     print("Copied Dolphin save back to mGBA path.")
     
     # ---- Step 7: Reopen the ROM in mGBA to examine the result ----
+    wait_if_paused()
     focus_and_load_rom()
     
     # ---- Step 8: Inspect the summary page to check the ribbon colour ----
+    wait_if_paused()
     open_summary_for_check()
     if detect_shiny_color():
         print("\n*** SHINY JIRACHI FOUND! ***\n")
