@@ -1,6 +1,7 @@
 import time
-import pyautogui
+import pydirectinput as pyautogui
 from PIL import ImageGrab
+pyautogui.FAILSAFE = False
 import os
 import shutil
 import datetime
