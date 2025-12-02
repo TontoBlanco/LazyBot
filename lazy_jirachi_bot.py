@@ -298,7 +298,7 @@ def auto_transfer_dolphin():
     """Execute the button rhythm inside Dolphin to trigger the Jirachi transfer."""
     pyautogui.click(*DOLPHIN_CLICK)  # Ensure focus
     time.sleep(10)
-    pyautogui.press('left')  # Your specified arrow
+    pyautogui.press('right')  # Your specified arrow
     time.sleep(10)
     pyautogui.press('space')
     time.sleep(10)
