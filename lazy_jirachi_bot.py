@@ -18,6 +18,7 @@ ISO_PATH = r"C:\Users\colem\OneDrive\Desktop\PokemonColosseumBonusDisk.iso"  # F
 SAVE_PATH = r"C:\mGBA\ROMs\PokemonSapphire.sav"  # mGBA save path
 STATE_PATH = r"C:\mGBA\ROMs\PokemonSapphire.ss1"  # Optional savestate path if needed
 DOLPHIN_SAV_PATH = r"C:\Users\colem\AppData\Roaming\Dolphin Emulator\GBA\Saves\Pokemon - Sapphire Version (USA, Europe)-2.sav"  # Dolphin save path
+DOLPHIN_SAV_TEMP = os.path.join(os.path.dirname(DOLPHIN_SAV_PATH), "~lazy_bot_sav.tmp")
 BACKUP_DIR = r"C:\Users\colem\OneDrive\Desktop\Gameboy Backup"  # Backup folder
 ORIGINAL_BACKUP = os.path.join(BACKUP_DIR, "raw_shiny_target_time.sav")  # Pre-transfer backup
 JUST_IN_CASE_DIR = r"C:\mGBA\Just_In_Case"  # Non-shiny folder
@@ -452,7 +453,8 @@ while True:
     
     # ---- Step 2: Move the fresh save into Dolphin's shared GBA slot ----
     if os.path.exists(SAVE_PATH):
-        shutil.move(SAVE_PATH, DOLPHIN_SAV_PATH)
+        shutil.copy(SAVE_PATH, DOLPHIN_SAV_TEMP)
+        shutil.move(DOLPHIN_SAV_TEMP, DOLPHIN_SAV_PATH)
         print("Moved save to Dolphin path.")
     else:
         print("ERROR: Save file not found after save - check mGBA settings.")
