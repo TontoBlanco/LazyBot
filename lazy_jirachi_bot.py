@@ -202,12 +202,12 @@ def type_via_clipboard(text):
 # =====================================
 # CORE FUNCTIONS
 # =====================================
-def focus_and_load_rom():
+def focus_and_load_rom(load_state=True):
     """Load the configured ROM either via HTTP or GUI automation."""
     if MGBA_CONTROL_MODE.lower() == "http":
         _ensure_http_client()
         MGBA_HTTP_CLIENT.load_rom(ROM_PATH)
-        if STATE_PATH and os.path.exists(STATE_PATH):
+        if load_state and STATE_PATH and os.path.exists(STATE_PATH):
             MGBA_HTTP_CLIENT.load_state_file(STATE_PATH)
         time.sleep(1)
         print("Loaded ROM in mGBA via HTTP.")
@@ -222,6 +222,11 @@ def focus_and_load_rom():
     pyautogui.press('enter')
     time.sleep(10)  # Wait for load
     print("Loaded ROM in mGBA.")
+
+
+def focus_and_load_rom_from_save():
+    """Load ROM without restoring the savestate so the copied .sav is used."""
+    focus_and_load_rom(load_state=False)
 
 def focus_and_load_iso():
     """Bring Dolphin to the foreground and load the ISO via Ctrl+O."""
@@ -481,7 +486,7 @@ while True:
     
     # ---- Step 7: Reopen the ROM in mGBA to examine the result ----
     wait_if_paused()
-    focus_and_load_rom()
+    focus_and_load_rom_from_save()
     
     # ---- Step 8: Inspect the summary page to check the ribbon colour ----
     wait_if_paused()
