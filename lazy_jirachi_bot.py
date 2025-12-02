@@ -166,6 +166,18 @@ def http_sequence(sequence):
     for button, count, delay in sequence:
         http_tap(button, count=count, delay=delay)
 
+
+def send_hotkey(*keys, interval=0.02):
+    """Replicate pyautogui.hotkey using PyDirectInput keyDown/keyUp."""
+    if not keys:
+        return
+    for key in keys:
+        pyautogui.keyDown(key)
+        time.sleep(interval)
+    for key in reversed(keys):
+        pyautogui.keyUp(key)
+        time.sleep(interval)
+
 # =====================================
 # CORE FUNCTIONS
 # =====================================
@@ -182,7 +194,7 @@ def focus_and_load_rom():
 
     pyautogui.click(*MGBA_CLICK)
     time.sleep(10)
-    pyautogui.hotkey('ctrl', 'o')
+    send_hotkey('ctrl', 'o')
     time.sleep(10)
     pyautogui.typewrite(ROM_PATH)
     time.sleep(10)
@@ -194,7 +206,7 @@ def focus_and_load_iso():
     """Bring Dolphin to the foreground and load the ISO via Ctrl+O."""
     pyautogui.click(*DOLPHIN_CLICK)
     time.sleep(10)
-    pyautogui.hotkey('ctrl', 'o')
+    send_hotkey('ctrl', 'o')
     time.sleep(10)
     pyautogui.typewrite(ISO_PATH)
     time.sleep(10)
@@ -303,7 +315,7 @@ def close_mgba_rom():
 
     pyautogui.click(*MGBA_CLICK)  # Ensure focus
     time.sleep(10)
-    pyautogui.hotkey('ctrl', 'k')
+    send_hotkey('ctrl', 'k')
     time.sleep(10)
     print("Closed ROM in mGBA.")
 
