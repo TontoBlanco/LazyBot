@@ -1,6 +1,7 @@
 import time
 import pydirectinput as pyautogui
 from PIL import ImageGrab
+import pyperclip
 pyautogui.FAILSAFE = False
 import os
 import shutil
@@ -189,6 +190,13 @@ def wait_if_paused():
             has_announced = True
         time.sleep(1.5)
 
+
+def type_via_clipboard(text):
+    """Paste text reliably (preserving case) by using the clipboard."""
+    pyperclip.copy(text)
+    time.sleep(0.1)
+    send_hotkey('ctrl', 'v')
+
 # =====================================
 # CORE FUNCTIONS
 # =====================================
@@ -207,7 +215,7 @@ def focus_and_load_rom():
     time.sleep(10)
     send_hotkey('ctrl', 'o')
     time.sleep(10)
-    pyautogui.typewrite(ROM_PATH)
+    type_via_clipboard(ROM_PATH)
     time.sleep(10)
     pyautogui.press('enter')
     time.sleep(10)  # Wait for load
@@ -219,7 +227,7 @@ def focus_and_load_iso():
     time.sleep(10)
     send_hotkey('ctrl', 'o')
     time.sleep(10)
-    pyautogui.typewrite(ISO_PATH)
+    type_via_clipboard(ISO_PATH)
     time.sleep(10)
     pyautogui.press('enter')
     time.sleep(10)  # Wait for load
