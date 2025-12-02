@@ -180,7 +180,7 @@ def focus_and_load_rom():
         print("Loaded ROM in mGBA via HTTP.")
         return
 
-    pyautogui.click(MGBA_CLICK)
+    pyautogui.click(*MGBA_CLICK)
     time.sleep(10)
     pyautogui.hotkey('ctrl', 'o')
     time.sleep(10)
@@ -192,7 +192,7 @@ def focus_and_load_rom():
 
 def focus_and_load_iso():
     """Bring Dolphin to the foreground and load the ISO via Ctrl+O."""
-    pyautogui.click(DOLPHIN_CLICK)
+    pyautogui.click(*DOLPHIN_CLICK)
     time.sleep(10)
     pyautogui.hotkey('ctrl', 'o')
     time.sleep(10)
@@ -209,7 +209,7 @@ def advance_frame():
         print("Advanced frame in mGBA via HTTP.")
         return
 
-    pyautogui.click(MGBA_CLICK)  # Ensure focus
+    pyautogui.click(*MGBA_CLICK)  # Ensure focus
     time.sleep(10)
     pyautogui.press('n')
     time.sleep(10)
@@ -231,7 +231,7 @@ def save_at_new_frame():
         print("Saved in mGBA via HTTP.")
         return
 
-    pyautogui.click(MGBA_CLICK)  # Ensure focus
+    pyautogui.click(*MGBA_CLICK)  # Ensure focus
     time.sleep(10)
     for _ in range(3):
         pyautogui.press('x')
@@ -261,7 +261,7 @@ def save_at_new_frame():
 
 def auto_transfer_dolphin():
     """Execute the button rhythm inside Dolphin to trigger the Jirachi transfer."""
-    pyautogui.click(DOLPHIN_CLICK)  # Ensure focus
+    pyautogui.click(*DOLPHIN_CLICK)  # Ensure focus
     time.sleep(10)
     pyautogui.press('left')  # Your specified arrow
     time.sleep(10)
@@ -284,7 +284,7 @@ def auto_transfer_dolphin():
 
 def close_dolphin_game():
     """Exit the currently running Dolphin game via on-screen hotkeys."""
-    pyautogui.click(DOLPHIN_CLICK)  # Ensure focus
+    pyautogui.click(*DOLPHIN_CLICK)  # Ensure focus
     time.sleep(10)
     pyautogui.press('-')
     time.sleep(10)
@@ -301,7 +301,7 @@ def close_mgba_rom():
         print("Reset/closed ROM in mGBA via HTTP.")
         return
 
-    pyautogui.click(MGBA_CLICK)  # Ensure focus
+    pyautogui.click(*MGBA_CLICK)  # Ensure focus
     time.sleep(10)
     pyautogui.hotkey('ctrl', 'k')
     time.sleep(10)
@@ -322,7 +322,7 @@ def open_summary_for_check():
         print("Opened summary in mGBA via HTTP for check.")
         return
 
-    pyautogui.click(MGBA_CLICK)  # Ensure focus
+    pyautogui.click(*MGBA_CLICK)  # Ensure focus
     time.sleep(10)
     for _ in range(3):
         pyautogui.press('x')
