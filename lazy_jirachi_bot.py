@@ -496,8 +496,8 @@ while True:
             os.makedirs(JUST_IN_CASE_DIR)
         trial_num = get_trial_number()
         non_shiny_rename = os.path.join(JUST_IN_CASE_DIR, f"JirachiTrial{trial_num}.sav")
-        shutil.move(SAVE_PATH, non_shiny_rename)
-        print(f"Moved non-shiny to {non_shiny_rename}")
+        shutil.copy(SAVE_PATH, non_shiny_rename)
+        print(f"Copied non-shiny to {non_shiny_rename}")
     
     attempt += 1
     time.sleep(1)  # Brief pause between cycles
