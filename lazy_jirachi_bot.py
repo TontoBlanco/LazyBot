@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-import time
+# -*- coding: utf-8 -*-
 import time
 import pydirectinput as pyautogui
 from PIL import ImageGrab
@@ -83,7 +83,7 @@ class MgbaHttpClient:
     def load_rom(self, rom_path):
         return self._request("post", "/mgba-http/extension/loadfile", params={"path": rom_path})
 
-    def load_state_file(self, state_path, flags=29):
+    def load_state_file(self, state_path, flags=31):
         params = {"path": state_path, "flags": flags}
         return self._request("post", "/core/loadstatefile", params=params)
 
@@ -252,16 +252,16 @@ def save_at_new_frame():
     """Perform the in-game save routine so the new frame lands on disk."""
     if MGBA_CONTROL_MODE.lower() == "http":
         sequence = [
-            (GBA_MENU_BUTTON, 1, 0.5),  # Open pause menu
-            ("Down", GBA_SAVE_MENU_DOWN_PRESSES, 0.5),  # Navigate to Save
-            (GBA_ACTION_BUTTON, 1, 1.5),
-            (GBA_ACTION_BUTTON, 1, 1.5),
-            (GBA_ACTION_BUTTON, 1, 10),  # Confirm save prompts
+            (GBA_MENU_BUTTON, 1, 0.4),  # Open pause menu
+            ("Down", GBA_SAVE_MENU_DOWN_PRESSES, 0.25),  # Navigate to Save
+            (GBA_ACTION_BUTTON, 1, 0.6),
+            (GBA_ACTION_BUTTON, 1, 0.6),  # Confirm save prompts
         ]
         http_sequence(sequence)
         time.sleep(1.5)
         if STATE_PATH:
             MGBA_HTTP_CLIENT.save_state_file(STATE_PATH)
+        time.sleep(10)
         print("Saved in mGBA via HTTP.")
         return
 
@@ -279,6 +279,7 @@ def save_at_new_frame():
     pyautogui.press('x')
     time.sleep(10)
     time.sleep(2)  # Wait for save
+    time.sleep(10)
     print("Saved in mGBA.")
 
     # Alternative sequence if 'x' doesn't work (uncomment if needed):
@@ -297,7 +298,7 @@ def auto_transfer_dolphin():
     """Execute the button rhythm inside Dolphin to trigger the Jirachi transfer."""
     pyautogui.click(*DOLPHIN_CLICK)  # Ensure focus
     time.sleep(10)
-    pyautogui.press('right')  # Your specified arrow
+    pyautogui.press('left')  # Your specified arrow
     time.sleep(10)
     pyautogui.press('space')
     time.sleep(10)
@@ -329,6 +330,7 @@ def close_dolphin_game():
 def close_mgba_rom():
     """Reset/close mGBA so the save file is flushed before leaving."""
     if MGBA_CONTROL_MODE.lower() == "http":
+        time.sleep(5)
         _ensure_http_client()
         MGBA_HTTP_CLIENT.reset_core()
         time.sleep(0.5)
@@ -451,7 +453,6 @@ while True:
     focus_and_load_rom()
     advance_frame()
     save_at_new_frame()
-    close_mgba_rom()
     
     # ---- Step 2: Move the fresh save into Dolphin's shared GBA slot ----
     if os.path.exists(SAVE_PATH):
@@ -498,8 +499,8 @@ while True:
             os.makedirs(JUST_IN_CASE_DIR)
         trial_num = get_trial_number()
         non_shiny_rename = os.path.join(JUST_IN_CASE_DIR, f"JirachiTrial{trial_num}.sav")
-        shutil.move(SAVE_PATH, non_shiny_rename)
-        print(f"Moved non-shiny to {non_shiny_rename}")
+        shutil.copy(SAVE_PATH, non_shiny_rename)
+        print(f"Copied non-shiny to {non_shiny_rename}")
     
     attempt += 1
     time.sleep(1)  # Brief pause between cycles
