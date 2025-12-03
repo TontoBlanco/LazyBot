@@ -401,10 +401,11 @@ def open_summary_for_check():
     if MGBA_CONTROL_MODE.lower() == "http":
         sequence = [
             (GBA_MENU_BUTTON, 1, 0.4),  # Open pause menu
-            (GBA_ACTION_BUTTON, 1, 0.4),  # Select Pokémon (assumes default cursor)
-            (GBA_ACTION_BUTTON, 1, 0.4),  # Choose first Pokémon
-            ("Down", 4, 0.25),           # Navigate to Summary
-            (GBA_ACTION_BUTTON, 1, 0.4),  # Open Summary
+            ("Down", 1, 0.25),
+            (GBA_ACTION_BUTTON, 1, 0.4),
+            ("Down", 4, 0.25),
+            (GBA_ACTION_BUTTON, 1, 0.4),
+            (GBA_ACTION_BUTTON, 1, 0.4),
         ]
         http_sequence(sequence)
         time.sleep(2)
@@ -413,9 +414,6 @@ def open_summary_for_check():
 
     pyautogui.click(*MGBA_CLICK)  # Ensure focus
     time.sleep(10)
-    for _ in range(3):
-        pyautogui.press('x')
-        time.sleep(10)
     pyautogui.press('enter')
     time.sleep(10)
     pyautogui.press('down')
