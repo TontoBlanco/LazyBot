@@ -439,6 +439,12 @@ def load_save_from_title():
 
 def restore_working_files():
     """Restore the working .sav/.ss1 from their backup copies."""
+    if MGBA_CONTROL_MODE.lower() == "http" and ROM_PATH_COOLDOWN:
+        try:
+            run_cooldown_rom()
+        except Exception as exc:
+            print(f"WARNING: Unable to run cooldown ROM before restore: {exc}")
+
     if not os.path.exists(SAVE_BACKUP_PATH):
         if os.path.exists(SAVE_PATH):
             shutil.copy(SAVE_PATH, SAVE_BACKUP_PATH)
