@@ -378,23 +378,22 @@ def load_save_from_title():
     """Automate skipping intros and selecting Continue from the title screen after ROM load."""
     if MGBA_CONTROL_MODE.lower() == "http":
         time.sleep(5.0)
-        http_tap("Up", count=1, delay=0.2)
-        http_tap(GBA_ACTION_BUTTON, count=1, delay=1.0)
+        for _ in range(12):
+            http_tap(GBA_MENU_BUTTON, count=1, delay=0.2)
+        time.sleep(1.0)
         http_tap(GBA_ACTION_BUTTON, count=1, delay=0.3)
-        http_tap(GBA_ACTION_BUTTON, count=1, delay=0.3)
-        http_tap(GBA_ACTION_BUTTON, count=1, delay=0.3)
+        time.sleep(10.0)
         print("Loaded save from title screen via HTTP.")
         return
 
     pyautogui.click(*MGBA_CLICK)  # Ensure focus
     time.sleep(5.0)
-    pyautogui.press('up')
-    time.sleep(0.2)
-    pyautogui.press('enter')
+    for _ in range(12):
+        pyautogui.press('enter')
+        time.sleep(0.2)
     time.sleep(1.0)
-    pyautogui.press('enter')
-    time.sleep(0.3)
-    pyautogui.press('enter')
+    pyautogui.press('x')
+    time.sleep(10.0)
     print("Loaded save from title screen.")
 
 def open_summary_for_check():
