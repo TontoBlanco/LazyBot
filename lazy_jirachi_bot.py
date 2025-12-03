@@ -10,6 +10,7 @@ import datetime
 import numpy as np
 import psutil
 import requests
+import zipfile
 
 # =====================================
 # CONFIGURATION – EDIT THESE VALUES
@@ -25,6 +26,8 @@ STATE_BACKUP_PATH = STATE_PATH + ".bak"
 BACKUP_DIR = r"C:\Users\colem\OneDrive\Desktop\Gameboy Backup"  # Backup folder
 ORIGINAL_BACKUP = os.path.join(BACKUP_DIR, "raw_shiny_target_time.sav")  # Pre-transfer backup
 JUST_IN_CASE_DIR = r"C:\mGBA\Just_In_Case"  # Non-shiny folder
+JUST_IN_CASE_ARCHIVE_DIR = os.path.join(JUST_IN_CASE_DIR, "archives")
+JUST_IN_CASE_ARCHIVE_MAX = 50
 LOG_FILE = "seed_log.txt"  # Seed log
 DOLPHIN_CLICK = (1932, 1086)  # Dolphin focus click - updated
 MGBA_CLICK = (560, 341)  # mGBA focus click - updated
@@ -514,6 +517,35 @@ def get_trial_number():
         f.write(str(count))
     return count
 
+
+def archive_old_trials():
+    """Zip older JirachiTrial saves to keep storage manageable."""
+    if not os.path.exists(JUST_IN_CASE_DIR):
+        return
+
+    trial_saves = [
+        os.path.join(JUST_IN_CASE_DIR, file_name)
+        for file_name in os.listdir(JUST_IN_CASE_DIR)
+        if file_name.lower().startswith("jirachitrial") and file_name.lower().endswith(".sav")
+    ]
+
+    if len(trial_saves) <= JUST_IN_CASE_ARCHIVE_MAX:
+        return
+
+    os.makedirs(JUST_IN_CASE_ARCHIVE_DIR, exist_ok=True)
+    archive_name = datetime.datetime.now().strftime("JirachiTrials_%Y%m%d_%H%M%S.zip")
+    archive_path = os.path.join(JUST_IN_CASE_ARCHIVE_DIR, archive_name)
+
+    trial_saves.sort(key=os.path.getmtime)
+    files_to_archive = trial_saves[:-JUST_IN_CASE_ARCHIVE_MAX]
+
+    with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED) as archive_zip:
+        for file_path in files_to_archive:
+            archive_zip.write(file_path, arcname=os.path.basename(file_path))
+            os.remove(file_path)
+
+    print(f"Archived {len(files_to_archive)} trial saves to {archive_path}")
+
 # =====================================
 # MAIN BOT LOOP
 # =====================================
@@ -587,6 +619,7 @@ while True:
         shutil.move(SAVE_PATH, non_shiny_rename)
         print(f"Moved non-shiny to {non_shiny_rename}")
         restore_working_files()
+        archive_old_trials()
     
     attempt += 1
     time.sleep(1)  # Brief pause between cycles
