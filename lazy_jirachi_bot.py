@@ -10,7 +10,6 @@ import datetime
 import numpy as np
 import psutil
 import requests
-import subprocess
 
 # =====================================
 # CONFIGURATION – EDIT THESE VALUES
@@ -31,7 +30,7 @@ DOLPHIN_SCREEN_BBOX = (100, 100, 580, 420)  # Dolphin game screen bbox - tune (u
 MGBA_SCREEN_BBOX = (0, 30, 240, 190)  # mGBA game screen bbox - tune for your window (GBA is 240x160)
 TAG_AREA_REL = (71, 228, 91, 248)  # Tag area relative to SCREEN_BBOX - retune for mGBA if needed
 DOLPHIN_EXE_NAME = "Dolphin.exe"  # For killing if needed
-DOLPHIN_EXE_PATH = r"C:\Dolphin\Dolphin.exe"  # Path to Dolphin executable
+DOLPHIN_EXE_PATH = r"C:\Dolphin\Dolphin-x64\Dolphin.exe"  # Full path to Dolphin executable - edit this
 MGBA_CONTROL_MODE = "http"  # Options: "http" to use mGBA-http, "gui" to fall back to pyautogui
 MGBA_HTTP_BASE_URL = "http://localhost:5000"
 MGBA_HTTP_TIMEOUT = 5.0
@@ -359,17 +358,6 @@ def close_dolphin_game():
     kill_dolphin()
     print("Closed game in Dolphin.")
 
-
-def ensure_dolphin_running():
-    """Launch Dolphin if it is not already running."""
-    if any(proc.name() == DOLPHIN_EXE_NAME for proc in psutil.process_iter()):
-        return
-    if not os.path.exists(DOLPHIN_EXE_PATH):
-        raise RuntimeError(f"Dolphin executable not found at {DOLPHIN_EXE_PATH}. Update DOLPHIN_EXE_PATH in config.")
-    subprocess.Popen([DOLPHIN_EXE_PATH], cwd=os.path.dirname(DOLPHIN_EXE_PATH), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    time.sleep(5)
-    print("Launched Dolphin executable.")
-
 def close_mgba_rom():
     """Reset/close mGBA so the save file is flushed before leaving."""
     if MGBA_CONTROL_MODE.lower() == "http":
@@ -413,12 +401,12 @@ def open_summary_for_check():
     """Navigate through the in-game menus until the Pokémon summary screen is shown."""
     if MGBA_CONTROL_MODE.lower() == "http":
         sequence = [
-            (GBA_MENU_BUTTON, 1, 0.4),  # Open pause menu
-            ("Down", 1, 0.25),
-            (GBA_ACTION_BUTTON, 1, 0.4),
-            ("Down", 4, 0.25),
-            (GBA_ACTION_BUTTON, 1, 0.4),
-            (GBA_ACTION_BUTTON, 1, 0.4),
+            (GBA_MENU_BUTTON, 1, 1),  # Open pause menu
+            ("Down", 1, 1),
+            (GBA_ACTION_BUTTON, 1, 1),
+            ("Down", 4, 1),
+            (GBA_ACTION_BUTTON, 1, 1),
+            (GBA_ACTION_BUTTON, 1, 1),
         ]
         http_sequence(sequence)
         time.sleep(2)
@@ -484,6 +472,18 @@ def kill_dolphin():
             time.sleep(2)
             break
 
+def launch_dolphin_if_closed():
+    """Launch Dolphin if not running; otherwise, just focus it."""
+    running = any(proc.name() == DOLPHIN_EXE_NAME for proc in psutil.process_iter())
+    if not running:
+        os.startfile(DOLPHIN_EXE_PATH)
+        time.sleep(10)  # Wait for Dolphin to fully launch (tune if needed)
+        print("Launched Dolphin emulator.")
+    else:
+        pyautogui.click(*DOLPHIN_CLICK)  # Focus if already open
+        time.sleep(2)
+        print("Dolphin already running; focused window.")
+
 def get_trial_number():
     """Increment and persist a simple attempt counter used for naming .sav archives."""
     trial_count_file = "trial_count.txt"  # Simple counter file
@@ -529,7 +529,7 @@ while True:
     
     # ---- Step 3: Launch the ISO and run the scripted transfer ----
     wait_if_paused()
-    ensure_dolphin_running()
+    launch_dolphin_if_closed()  # Add this to ensure Dolphin is open
     focus_and_load_iso()
     
     # ---- Step 4: Execute the menu rhythm that initiates the Jirachi gift ----
