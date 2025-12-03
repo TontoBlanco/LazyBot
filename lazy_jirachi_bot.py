@@ -455,6 +455,16 @@ def restore_working_files():
         shutil.copy(STATE_BACKUP_PATH, STATE_PATH)
         print("Restored working .ss1 from backup.")
 
+
+def update_working_backups():
+    """Persist the latest working save/state into the backup files."""
+    if os.path.exists(SAVE_PATH):
+        shutil.copy(SAVE_PATH, SAVE_BACKUP_PATH)
+        print("Updated .sav backup with latest working file.")
+    if os.path.exists(STATE_PATH):
+        shutil.copy(STATE_PATH, STATE_BACKUP_PATH)
+        print("Updated .ss1 backup with latest working file.")
+
 def open_summary_for_check():
     """Navigate through the in-game menus until the Pokémon summary screen is shown."""
     if MGBA_CONTROL_MODE.lower() == "http":
@@ -646,6 +656,7 @@ while True:
     advance_frame()
     save_at_new_frame()
     close_mgba_rom()
+    update_working_backups()
     
     # ---- Step 2: Move the fresh save into Dolphin's shared GBA slot ----
     if os.path.exists(SAVE_PATH):
@@ -698,7 +709,6 @@ while True:
         non_shiny_rename = os.path.join(JUST_IN_CASE_DIR, f"JirachiTrial{trial_num}.sav")
         shutil.move(SAVE_PATH, non_shiny_rename)
         print(f"Moved non-shiny to {non_shiny_rename}")
-        restore_working_files()
         archive_old_trials()
     
     attempt += 1
