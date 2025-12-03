@@ -348,6 +348,28 @@ def close_mgba_rom():
     time.sleep(10)
     print("Closed ROM in mGBA.")
 
+
+def load_save_from_title():
+    """Automate skipping intros and selecting Continue from the title screen after ROM load."""
+    if MGBA_CONTROL_MODE.lower() == "http":
+        for _ in range(30):
+            http_tap(GBA_MENU_BUTTON, count=1, delay=0.5)
+        time.sleep(1.0)
+        http_tap(GBA_ACTION_BUTTON, count=1, delay=0.5)
+        time.sleep(10.0)
+        print("Loaded save from title screen via HTTP.")
+        return
+
+    pyautogui.click(*MGBA_CLICK)  # Ensure focus
+    time.sleep(10)
+    for _ in range(30):
+        pyautogui.press('enter')
+        time.sleep(0.5)
+    time.sleep(1.0)
+    pyautogui.press('x')
+    time.sleep(10.0)
+    print("Loaded save from title screen.")
+
 def open_summary_for_check():
     """Navigate through the in-game menus until the Pokémon summary screen is shown."""
     if MGBA_CONTROL_MODE.lower() == "http":
@@ -487,6 +509,7 @@ while True:
     # ---- Step 7: Reopen the ROM in mGBA to examine the result ----
     wait_if_paused()
     focus_and_load_rom_from_save()
+    load_save_from_title()
     
     # ---- Step 8: Inspect the summary page to check the ribbon colour ----
     wait_if_paused()
