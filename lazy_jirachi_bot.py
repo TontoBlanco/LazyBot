@@ -498,10 +498,8 @@ def open_summary_for_check():
     print("Opened summary in mGBA for check.")
 
 def detect_shiny_color():
-    """Sample the summary tag pixels from emulator screenshot and check for shiny palette."""
-    try:
-        data = MGBA_HTTP_CLIENT.get_screenshot()
-        img = Image.open(io.BytesIO(data))
+    """Sample the summary tag pixels and decide whether they match the red shiny palette."""
+    def evaluate_image(img):
         tag_img = img.crop(TAG_AREA_REL)
         tag_array = np.array(tag_img)
         avg_color = np.mean(tag_array, axis=(0, 1))
@@ -513,8 +511,20 @@ def detect_shiny_color():
         else:
             print("Color check: Blue tags – NOT SHINY")
             return False
+
+    try:
+        if MGBA_CONTROL_MODE.lower() == "http" and MGBA_HTTP_CLIENT:
+            data = MGBA_HTTP_CLIENT.get_screenshot()
+            img = Image.open(io.BytesIO(data))
+            return evaluate_image(img)
     except Exception as e:
-        print(f"ERROR in color detection: {e}")
+        print(f"ERROR grabbing HTTP screenshot: {e}. Falling back to screen capture.")
+
+    try:
+        img = ImageGrab.grab(bbox=MGBA_SCREEN_BBOX)
+        return evaluate_image(img)
+    except Exception as e:
+        print(f"ERROR in color detection fallback: {e}")
         return False
 
 def backup_save_files():
