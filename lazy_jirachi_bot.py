@@ -86,6 +86,10 @@ class MgbaHttpClient:
 
     def load_rom_core(self, rom_path):
         return self._request("post", "/core/loadfile", params={"path": rom_path})
+
+    def load_save_file(self, save_path, temporary=False):
+        params = {"path": save_path, "temporary": str(temporary).lower()}
+        return self._request("post", "/core/loadsavefile", params=params)
     def load_state_file(self, state_path, flags=31):
         params = {"path": state_path, "flags": flags}
         return self._request("post", "/core/loadstatefile", params=params)
@@ -232,6 +236,7 @@ def focus_and_load_rom_from_save():
     if MGBA_CONTROL_MODE.lower() == "http":
         _ensure_http_client()
         MGBA_HTTP_CLIENT.load_rom_core(ROM_PATH)
+        MGBA_HTTP_CLIENT.load_save_file(SAVE_PATH, temporary=False)
         time.sleep(1)
         print("Loaded ROM in mGBA via HTTP (core load).")
         return
