@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import time
 import pydirectinput as pyautogui
-from PIL import ImageGrab
+from PIL import Image, ImageGrab
 import pyperclip
 pyautogui.FAILSAFE = False
 import os
@@ -11,6 +11,7 @@ import numpy as np
 import psutil
 import requests
 import zipfile
+import tempfile
 import io
 
 # =====================================
@@ -109,19 +110,19 @@ class MgbaHttpClient:
         return self._request("post", "/core/savestatefile", params=params)
 
     def get_screenshot(self):
-        """Return current screen as PNG bytes via /core/screenshot."""
-        url = f"{self.base_url}/core/screenshot"
-        last_error = None
-        for attempt in range(1, self.retries + 1):
+        """Capture a screenshot to a temp file via /core/screenshot and return bytes."""
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+        tmp_path = tmp.name
+        tmp.close()
+        try:
+            self._request("post", "/core/screenshot", params={"path": tmp_path})
+            with open(tmp_path, "rb") as fh:
+                return fh.read()
+        finally:
             try:
-                response = self.session.post(url, timeout=self.timeout)
-                response.raise_for_status()
-                return response.content
-            except requests.RequestException as exc:
-                last_error = exc
-                if attempt < self.retries:
-                    time.sleep(self.retry_delay)
-        raise RuntimeError(f"mGBA-http screenshot failed: {last_error}") from last_error
+                os.remove(tmp_path)
+            except OSError:
+                pass
 
     def tap_button(self, button):
         return self._request("post", "/mgba-http/button/tap", params={"button": button})
@@ -292,14 +293,11 @@ def save_at_new_frame():
     if MGBA_CONTROL_MODE.lower() == "http":
         sequence = [
             (GBA_MENU_BUTTON, 1, 0.5),
-        ]
-        if _save_menu_needs_navigation:
-            sequence.append(("Down", GBA_SAVE_MENU_DOWN_PRESSES, 0.5))
-        sequence.extend([
+            ("Down", GBA_SAVE_MENU_DOWN_PRESSES, 0.5),
             (GBA_ACTION_BUTTON, 1, 1.5),
             (GBA_ACTION_BUTTON, 1, 1.5),
             (GBA_ACTION_BUTTON, 1, 10),
-        ])
+        ]
         http_sequence(sequence)
         time.sleep(1.5)
         if STATE_PATH:
