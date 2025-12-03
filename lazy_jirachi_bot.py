@@ -303,24 +303,23 @@ def save_at_new_frame():
 def auto_transfer_dolphin():
     """Execute the button rhythm inside Dolphin to trigger the Jirachi transfer."""
     pyautogui.click(*DOLPHIN_CLICK)  # Ensure focus
-    time.sleep(10)
+    time.sleep(3)
     pyautogui.press('right')  # Your specified arrow
+    time.sleep(2)
+    pyautogui.press('space')
     time.sleep(10)
+    pyautogui.press('space')
+    time.sleep(1)
+    pyautogui.press('space')
+    time.sleep(1)
+    pyautogui.press('space')
+    time.sleep(1)
     pyautogui.press('space')
     time.sleep(10)
     pyautogui.press('space')
     time.sleep(10)
     pyautogui.press('space')
-    time.sleep(10)
-    pyautogui.press('space')
-    time.sleep(10)
-    time.sleep(10)
-    pyautogui.press('space')
-    time.sleep(10)
-    pyautogui.press('space')
-    time.sleep(10)
-    pyautogui.press('space')
-    time.sleep(60)  # Wait 1 min
+    time.sleep(120)  # Wait 2 min
     print("Transfer completed in Dolphin.")
 
 def close_dolphin_game():
