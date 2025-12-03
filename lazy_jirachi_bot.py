@@ -261,10 +261,9 @@ def focus_and_load_rom_from_save():
     """Load ROM without restoring the savestate so the copied .sav is used."""
     if MGBA_CONTROL_MODE.lower() == "http":
         _ensure_http_client()
-        MGBA_HTTP_CLIENT.load_rom_core(ROM_PATH)
-        MGBA_HTTP_CLIENT.load_save_file(SAVE_PATH, temporary=False)
-        time.sleep(1)
-        print("Loaded ROM in mGBA via HTTP (core load).")
+        MGBA_HTTP_CLIENT.load_rom(ROM_PATH)
+        time.sleep(2)
+        print("Reloaded ROM (and save) in mGBA via HTTP for verification.")
         return
     focus_and_load_rom(load_state=False)
 
