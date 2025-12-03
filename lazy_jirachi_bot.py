@@ -568,6 +568,12 @@ while True:
         non_shiny_rename = os.path.join(JUST_IN_CASE_DIR, f"JirachiTrial{trial_num}.sav")
         shutil.copy(SAVE_PATH, non_shiny_rename)
         print(f"Copied non-shiny to {non_shiny_rename}")
+        backup_source = os.path.join(os.path.dirname(SAVE_PATH), "Pokemon - Sapphire Version (USA, Europe).sav.bak")
+        if os.path.exists(backup_source):
+            shutil.copy(backup_source, SAVE_PATH)
+            print("Restored working save from backup.")
+        else:
+            print(f"WARNING: Backup file missing at {backup_source}")
     
     attempt += 1
     time.sleep(1)  # Brief pause between cycles
