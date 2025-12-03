@@ -646,9 +646,12 @@ print(f"Debug: ORIGINAL_BACKUP is {ORIGINAL_BACKUP}, exists: {os.path.exists(ORI
 input("Press Enter to start...")
 
 attempt = 1
+# Track a simple log of per-attempt timings
+attempt_started_at = None
 while True:
     wait_if_paused()
-    print(f"Attempt {attempt} started.")
+    attempt_started_at = time.time()
+    print(f"[Attempt {attempt}] Started")
     
     # ---- Step 1: Load ROM, advance by a frame, save, then close mGBA ----
     launch_mgba_if_closed()
@@ -693,7 +696,8 @@ while True:
     # ---- Step 8: Inspect the summary page to check the ribbon colour ----
     wait_if_paused()
     open_summary_for_check()
-    if detect_shiny_color():
+    shiny = detect_shiny_color()
+    if shiny:
         print("\n*** SHINY JIRACHI FOUND! ***\n")
         print("🎉🎉🎉 CONGRATULATIONS! You've got a shiny Jirachi after {} attempts! 🎉🎉🎉".format(attempt))
         print("Verify in mGBA (red tags) or PKHeX (red star). Save is at {}".format(SAVE_PATH))
@@ -710,6 +714,8 @@ while True:
         shutil.move(SAVE_PATH, non_shiny_rename)
         print(f"Moved non-shiny to {non_shiny_rename}")
         archive_old_trials()
+        elapsed = time.time() - attempt_started_at
+        print(f"[Attempt {attempt}] Completed (not shiny) in {elapsed:.1f}s\n")
     
     attempt += 1
     _save_menu_needs_navigation = False
