@@ -114,7 +114,7 @@ class MgbaHttpClient:
         last_error = None
         for attempt in range(1, self.retries + 1):
             try:
-                response = self.session.get(url, timeout=self.timeout)
+                response = self.session.post(url, timeout=self.timeout)
                 response.raise_for_status()
                 return response.content
             except requests.RequestException as exc:
@@ -439,12 +439,6 @@ def load_save_from_title():
 
 def restore_working_files():
     """Restore the working .sav/.ss1 from their backup copies."""
-    if MGBA_CONTROL_MODE.lower() == "http" and ROM_PATH_COOLDOWN:
-        try:
-            run_cooldown_rom()
-        except Exception as exc:
-            print(f"WARNING: Unable to run cooldown ROM before restore: {exc}")
-
     if not os.path.exists(SAVE_BACKUP_PATH):
         if os.path.exists(SAVE_PATH):
             shutil.copy(SAVE_PATH, SAVE_BACKUP_PATH)
@@ -634,7 +628,6 @@ print("Position mGBA top-left, Dolphin right. Emulators open but unloaded.")
 print("=================================")
 print(f"Debug: SAVE_PATH is {SAVE_PATH}, exists: {os.path.exists(SAVE_PATH)}")
 print(f"Debug: ORIGINAL_BACKUP is {ORIGINAL_BACKUP}, exists: {os.path.exists(ORIGINAL_BACKUP)}")
-restore_working_files()
 input("Press Enter to start...")
 
 attempt = 1
