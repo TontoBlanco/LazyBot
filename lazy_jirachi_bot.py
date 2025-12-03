@@ -293,11 +293,14 @@ def save_at_new_frame():
     if MGBA_CONTROL_MODE.lower() == "http":
         sequence = [
             (GBA_MENU_BUTTON, 1, 0.5),
-            ("Down", GBA_SAVE_MENU_DOWN_PRESSES, 0.5),
+        ]
+        if _save_menu_needs_navigation:
+            sequence.append(("Down", GBA_SAVE_MENU_DOWN_PRESSES, 0.5))
+        sequence.extend([
             (GBA_ACTION_BUTTON, 1, 1.5),
             (GBA_ACTION_BUTTON, 1, 1.5),
             (GBA_ACTION_BUTTON, 1, 10),
-        ]
+        ])
         http_sequence(sequence)
         time.sleep(1.5)
         if STATE_PATH:
@@ -314,7 +317,8 @@ def save_at_new_frame():
         time.sleep(10)
     pyautogui.press('enter')
     time.sleep(10)
-    pyautogui.press('down', presses=GBA_SAVE_MENU_DOWN_PRESSES)
+    if _save_menu_needs_navigation:
+        pyautogui.press('down', presses=GBA_SAVE_MENU_DOWN_PRESSES)
     time.sleep(10)
     pyautogui.press('x')
     time.sleep(10)
