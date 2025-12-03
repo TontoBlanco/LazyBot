@@ -43,7 +43,7 @@ MGBA_EXE_NAME = "mGBA.exe"
 MGBA_EXE_PATH = r"C:\Program Files\mGBA\mGBA.exe"  # Full path to mGBA executable - edit this
 MGBA_CONTROL_MODE = "http"  # Options: "http" to use mGBA-http, "gui" to fall back to pyautogui
 MGBA_HTTP_BASE_URL = "http://localhost:5000"
-MGBA_HTTP_TIMEOUT = 5.0
+MGBA_HTTP_TIMEOUT = 15.0
 MGBA_HTTP_RETRIES = 3
 MGBA_HTTP_RETRY_DELAY = 0.5
 GBA_MENU_BUTTON = "Start"
@@ -262,6 +262,12 @@ def focus_and_load_rom_from_save():
     if MGBA_CONTROL_MODE.lower() == "http":
         _ensure_http_client()
         MGBA_HTTP_CLIENT.load_rom(ROM_PATH)
+        time.sleep(2)
+        try:
+            MGBA_HTTP_CLIENT.load_save_file(SAVE_PATH, temporary=False)
+            print("Injected SAVE_PATH via /core/loadsavefile.")
+        except Exception as exc:
+            print(f"WARNING: load_save_file failed ({exc}); relying on auto-loaded save.")
         time.sleep(2)
         print("Reloaded ROM (and save) in mGBA via HTTP for verification.")
         return
