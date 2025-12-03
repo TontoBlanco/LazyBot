@@ -17,6 +17,7 @@ import io
 # CONFIGURATION – EDIT THESE VALUES
 # =====================================
 ROM_PATH = r"C:\mGBA\ROMs\PokemonSapphire.gba"  # Full path to ROM
+ROM_PATH_COOLDOWN = r"C:\mGBA\ROMs\PokemonFireRed.gba"  # Alternate ROM to briefly load between attempts
 ISO_PATH = r"C:\Users\colem\OneDrive\Desktop\PokemonColosseumBonusDisk.iso"  # Full path to ISO
 SAVE_PATH = r"C:\mGBA\ROMs\PokemonSapphire.sav"  # mGBA save path
 STATE_PATH = r"C:\mGBA\ROMs\PokemonSapphire.ss1"  # Optional savestate path if needed
@@ -398,6 +399,21 @@ def close_mgba_rom():
     print("Closed ROM in mGBA.")
 
 
+AUX_STATE_NAME = "lazy_bot_aux"
+def run_cooldown_rom():
+    """Load an alternate ROM to release file handles before moving saves."""
+    if MGBA_CONTROL_MODE.lower() == "http" and ROM_PATH_COOLDOWN:
+        _ensure_http_client()
+        MGBA_HTTP_CLIENT.load_rom_core(ROM_PATH_COOLDOWN)
+        time.sleep(1.5)
+        MGBA_HTTP_CLIENT.reset_core()
+        time.sleep(0.5)
+        print(f"Loaded cooldown ROM {ROM_PATH_COOLDOWN}.")
+    else:
+        # Fallback: do nothing if no cooldown ROM.
+        pass
+
+
 def load_save_from_title():
     """Automate skipping intros and selecting Continue from the title screen after ROM load."""
     if MGBA_CONTROL_MODE.lower() == "http":
@@ -672,7 +688,7 @@ while True:
     else:
         # ---- Step 9: Not shiny – archive the save for reference ----
         close_mgba_rom()
-        kill_mgba()
+        run_cooldown_rom()
         if not os.path.exists(JUST_IN_CASE_DIR):
             os.makedirs(JUST_IN_CASE_DIR)
         trial_num = get_trial_number()
