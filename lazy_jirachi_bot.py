@@ -11,6 +11,7 @@ import numpy as np
 import psutil
 import requests
 import zipfile
+import io
 
 # =====================================
 # CONFIGURATION – EDIT THESE VALUES
@@ -33,7 +34,7 @@ DOLPHIN_CLICK = (1932, 1086)  # Dolphin focus click - updated
 MGBA_CLICK = (560, 341)  # mGBA focus click - updated
 DOLPHIN_SCREEN_BBOX = (100, 100, 580, 420)  # Dolphin game screen bbox - tune (unused here)
 MGBA_SCREEN_BBOX = (0, 30, 240, 190)  # mGBA game screen bbox - tune for your window (GBA is 240x160)
-TAG_AREA_REL = (71, 228, 91, 248)  # Tag area relative to SCREEN_BBOX - retune for mGBA if needed
+TAG_AREA_REL = (71, 120, 91, 140)  # Tag area on 240x160 screenshot (x1, y1, x2, y2) - tune as needed
 DOLPHIN_EXE_NAME = "Dolphin.exe"  # For killing if needed
 DOLPHIN_EXE_PATH = r"C:\Dolphin\Dolphin-x64\Dolphin.exe"  # Full path to Dolphin executable - edit this
 MGBA_EXE_NAME = "mGBA.exe"
@@ -105,6 +106,21 @@ class MgbaHttpClient:
     def save_state_file(self, state_path, flags=31):
         params = {"path": state_path, "flags": flags}
         return self._request("post", "/core/savestatefile", params=params)
+
+    def get_screenshot(self):
+        """Return current screen as PNG bytes via /core/screenshot."""
+        url = f"{self.base_url}/core/screenshot"
+        last_error = None
+        for attempt in range(1, self.retries + 1):
+            try:
+                response = self.session.get(url, timeout=self.timeout)
+                response.raise_for_status()
+                return response.content
+            except requests.RequestException as exc:
+                last_error = exc
+                if attempt < self.retries:
+                    time.sleep(self.retry_delay)
+        raise RuntimeError(f"mGBA-http screenshot failed: {last_error}") from last_error
 
     def tap_button(self, button):
         return self._request("post", "/mgba-http/button/tap", params={"button": button})
@@ -461,10 +477,11 @@ def open_summary_for_check():
     time.sleep(2)  # Wait for summary
     print("Opened summary in mGBA for check.")
 
-def detect_shiny_color(bbox=MGBA_SCREEN_BBOX):
-    """Sample the summary tag pixels and decide whether they match the red shiny palette."""
+def detect_shiny_color():
+    """Sample the summary tag pixels from emulator screenshot and check for shiny palette."""
     try:
-        img = ImageGrab.grab(bbox=bbox)
+        data = MGBA_HTTP_CLIENT.get_screenshot()
+        img = Image.open(io.BytesIO(data))
         tag_img = img.crop(TAG_AREA_REL)
         tag_array = np.array(tag_img)
         avg_color = np.mean(tag_array, axis=(0, 1))
