@@ -21,7 +21,7 @@ SAVE_PATH = r"C:\mGBA\ROMs\PokemonSapphire.sav"  # mGBA save path
 STATE_PATH = r"C:\mGBA\ROMs\PokemonSapphire.ss1"  # Optional savestate path if needed
 DOLPHIN_SAV_PATH = r"C:\Users\colem\AppData\Roaming\Dolphin Emulator\GBA\Saves\PokemonSapphire-2.sav"  # Dolphin save path
 DOLPHIN_SAV_TEMP = os.path.join(os.path.dirname(DOLPHIN_SAV_PATH), "~lazy_bot_sav.tmp")
-SAVE_BACKUP_PATH = r"C:\mGBA\ROMs\Pokemon - Sapphire Version (USA, Europe).sav.bak"
+SAVE_BACKUP_PATH = r"C:\mGBA\ROMs\PokemonSapphire.sav.bak"
 STATE_BACKUP_PATH = STATE_PATH + ".bak"
 BACKUP_DIR = r"C:\Users\colem\OneDrive\Desktop\Gameboy Backup"  # Backup folder
 ORIGINAL_BACKUP = os.path.join(BACKUP_DIR, "raw_shiny_target_time.sav")  # Pre-transfer backup
@@ -555,7 +555,6 @@ print("Position mGBA top-left, Dolphin right. Emulators open but unloaded.")
 print("=================================")
 print(f"Debug: SAVE_PATH is {SAVE_PATH}, exists: {os.path.exists(SAVE_PATH)}")
 print(f"Debug: ORIGINAL_BACKUP is {ORIGINAL_BACKUP}, exists: {os.path.exists(ORIGINAL_BACKUP)}")
-restore_working_files()
 input("Press Enter to start...")
 
 attempt = 1
