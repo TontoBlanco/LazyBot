@@ -555,18 +555,20 @@ print("Position mGBA top-left, Dolphin right. Emulators open but unloaded.")
 print("=================================")
 print(f"Debug: SAVE_PATH is {SAVE_PATH}, exists: {os.path.exists(SAVE_PATH)}")
 print(f"Debug: ORIGINAL_BACKUP is {ORIGINAL_BACKUP}, exists: {os.path.exists(ORIGINAL_BACKUP)}")
+restore_working_files()
 input("Press Enter to start...")
 
 attempt = 1
 while True:
     wait_if_paused()
     print(f"Attempt {attempt} started.")
-    restore_working_files()
     
     # ---- Step 1: Load ROM, advance by a frame, save, then close mGBA ----
     focus_and_load_rom()
     advance_frame()
     save_at_new_frame()
+    close_mgba_rom()
+    restore_working_files()
     
     # ---- Step 2: Move the fresh save into Dolphin's shared GBA slot ----
     if os.path.exists(SAVE_PATH):
