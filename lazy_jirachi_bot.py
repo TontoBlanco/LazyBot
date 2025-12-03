@@ -36,6 +36,8 @@ MGBA_SCREEN_BBOX = (0, 30, 240, 190)  # mGBA game screen bbox - tune for your wi
 TAG_AREA_REL = (71, 228, 91, 248)  # Tag area relative to SCREEN_BBOX - retune for mGBA if needed
 DOLPHIN_EXE_NAME = "Dolphin.exe"  # For killing if needed
 DOLPHIN_EXE_PATH = r"C:\Dolphin\Dolphin-x64\Dolphin.exe"  # Full path to Dolphin executable - edit this
+MGBA_EXE_NAME = "mGBA.exe"
+MGBA_EXE_PATH = r"C:\Program Files\mGBA\mGBA.exe"  # Full path to mGBA executable - edit this
 MGBA_CONTROL_MODE = "http"  # Options: "http" to use mGBA-http, "gui" to fall back to pyautogui
 MGBA_HTTP_BASE_URL = "http://localhost:5000"
 MGBA_HTTP_TIMEOUT = 5.0
@@ -405,17 +407,26 @@ def load_save_from_title():
 
 def restore_working_files():
     """Restore the working .sav/.ss1 from their backup copies."""
-    if os.path.exists(SAVE_BACKUP_PATH):
-        shutil.copy(SAVE_BACKUP_PATH, SAVE_PATH)
-        print("Restored working .sav from backup.")
-    else:
-        print(f"WARNING: Save backup not found at {SAVE_BACKUP_PATH}")
+    if not os.path.exists(SAVE_BACKUP_PATH):
+        if os.path.exists(SAVE_PATH):
+            shutil.copy(SAVE_PATH, SAVE_BACKUP_PATH)
+            print("Created .sav backup from current working file.")
+        else:
+            print(f"WARNING: Save backup not found at {SAVE_BACKUP_PATH}")
+            return
+    shutil.copy(SAVE_BACKUP_PATH, SAVE_PATH)
+    print("Restored working .sav from backup.")
 
-    if STATE_BACKUP_PATH and os.path.exists(STATE_BACKUP_PATH):
+    if STATE_BACKUP_PATH:
+        if not os.path.exists(STATE_BACKUP_PATH):
+            if os.path.exists(STATE_PATH):
+                shutil.copy(STATE_PATH, STATE_BACKUP_PATH)
+                print("Created .ss1 backup from current working file.")
+            else:
+                print(f"WARNING: State backup not found at {STATE_BACKUP_PATH}")
+                return
         shutil.copy(STATE_BACKUP_PATH, STATE_PATH)
         print("Restored working .ss1 from backup.")
-    elif STATE_BACKUP_PATH:
-        print(f"WARNING: State backup not found at {STATE_BACKUP_PATH}")
 
 def open_summary_for_check():
     """Navigate through the in-game menus until the Pokémon summary screen is shown."""
@@ -495,14 +506,43 @@ def kill_dolphin():
 def launch_dolphin_if_closed():
     """Launch Dolphin if not running; otherwise, just focus it."""
     running = any(proc.name() == DOLPHIN_EXE_NAME for proc in psutil.process_iter())
-    if not running:
-        os.startfile(DOLPHIN_EXE_PATH)
-        time.sleep(10)  # Wait for Dolphin to fully launch (tune if needed)
-        print("Launched Dolphin emulator.")
-    else:
+    if running:
         pyautogui.click(*DOLPHIN_CLICK)  # Focus if already open
         time.sleep(2)
         print("Dolphin already running; focused window.")
+        return
+    if not os.path.isfile(DOLPHIN_EXE_PATH):
+        raise RuntimeError(f"Dolphin executable not found at {DOLPHIN_EXE_PATH}. Update DOLPHIN_EXE_PATH.")
+    os.startfile(DOLPHIN_EXE_PATH)
+    time.sleep(10)  # Wait for Dolphin to fully launch (tune if needed)
+    print("Launched Dolphin emulator.")
+
+
+def kill_mgba():
+    """Forcefully terminate mGBA to release locked files."""
+    killed = False
+    for proc in psutil.process_iter():
+        if proc.name() == MGBA_EXE_NAME:
+            try:
+                proc.kill()
+                killed = True
+            except psutil.Error:
+                pass
+    if killed:
+        time.sleep(2)
+        print("Killed mGBA process.")
+
+
+def launch_mgba_if_closed():
+    """Launch mGBA if it isn't already running."""
+    running = any(proc.name() == MGBA_EXE_NAME for proc in psutil.process_iter())
+    if running:
+        return
+    if not os.path.isfile(MGBA_EXE_PATH):
+        raise RuntimeError(f"mGBA executable not found at {MGBA_EXE_PATH}. Update MGBA_EXE_PATH.")
+    os.startfile(MGBA_EXE_PATH)
+    time.sleep(10)
+    print("Launched mGBA emulator.")
 
 def get_trial_number():
     """Increment and persist a simple attempt counter used for naming .sav archives."""
@@ -555,6 +595,8 @@ print("Position mGBA top-left, Dolphin right. Emulators open but unloaded.")
 print("=================================")
 print(f"Debug: SAVE_PATH is {SAVE_PATH}, exists: {os.path.exists(SAVE_PATH)}")
 print(f"Debug: ORIGINAL_BACKUP is {ORIGINAL_BACKUP}, exists: {os.path.exists(ORIGINAL_BACKUP)}")
+kill_mgba()
+restore_working_files()
 input("Press Enter to start...")
 
 attempt = 1
@@ -563,11 +605,11 @@ while True:
     print(f"Attempt {attempt} started.")
     
     # ---- Step 1: Load ROM, advance by a frame, save, then close mGBA ----
+    launch_mgba_if_closed()
     focus_and_load_rom()
     advance_frame()
     save_at_new_frame()
     close_mgba_rom()
-    restore_working_files()
     
     # ---- Step 2: Move the fresh save into Dolphin's shared GBA slot ----
     if os.path.exists(SAVE_PATH):
@@ -613,6 +655,7 @@ while True:
     else:
         # ---- Step 9: Not shiny – archive the save for reference ----
         close_mgba_rom()
+        kill_mgba()
         if not os.path.exists(JUST_IN_CASE_DIR):
             os.makedirs(JUST_IN_CASE_DIR)
         trial_num = get_trial_number()
