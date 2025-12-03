@@ -84,6 +84,8 @@ class MgbaHttpClient:
     def load_rom(self, rom_path):
         return self._request("post", "/mgba-http/extension/loadfile", params={"path": rom_path})
 
+    def load_rom_core(self, rom_path):
+        return self._request("post", "/core/loadfile", params={"path": rom_path})
     def load_state_file(self, state_path, flags=31):
         params = {"path": state_path, "flags": flags}
         return self._request("post", "/core/loadstatefile", params=params)
@@ -227,6 +229,12 @@ def focus_and_load_rom(load_state=True):
 
 def focus_and_load_rom_from_save():
     """Load ROM without restoring the savestate so the copied .sav is used."""
+    if MGBA_CONTROL_MODE.lower() == "http":
+        _ensure_http_client()
+        MGBA_HTTP_CLIENT.load_rom_core(ROM_PATH)
+        time.sleep(1)
+        print("Loaded ROM in mGBA via HTTP (core load).")
+        return
     focus_and_load_rom(load_state=False)
 
 def focus_and_load_iso():
