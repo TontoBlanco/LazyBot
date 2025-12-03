@@ -20,6 +20,8 @@ SAVE_PATH = r"C:\mGBA\ROMs\PokemonSapphire.sav"  # mGBA save path
 STATE_PATH = r"C:\mGBA\ROMs\PokemonSapphire.ss1"  # Optional savestate path if needed
 DOLPHIN_SAV_PATH = r"C:\Users\colem\AppData\Roaming\Dolphin Emulator\GBA\Saves\PokemonSapphire-2.sav"  # Dolphin save path
 DOLPHIN_SAV_TEMP = os.path.join(os.path.dirname(DOLPHIN_SAV_PATH), "~lazy_bot_sav.tmp")
+SAVE_BACKUP_PATH = r"C:\mGBA\ROMs\Pokemon - Sapphire Version (USA, Europe).sav.bak"
+STATE_BACKUP_PATH = STATE_PATH + ".bak"
 BACKUP_DIR = r"C:\Users\colem\OneDrive\Desktop\Gameboy Backup"  # Backup folder
 ORIGINAL_BACKUP = os.path.join(BACKUP_DIR, "raw_shiny_target_time.sav")  # Pre-transfer backup
 JUST_IN_CASE_DIR = r"C:\mGBA\Just_In_Case"  # Non-shiny folder
@@ -397,6 +399,21 @@ def load_save_from_title():
     time.sleep(10.0)
     print("Loaded save from title screen.")
 
+
+def restore_working_files():
+    """Restore the working .sav/.ss1 from their backup copies."""
+    if os.path.exists(SAVE_BACKUP_PATH):
+        shutil.copy(SAVE_BACKUP_PATH, SAVE_PATH)
+        print("Restored working .sav from backup.")
+    else:
+        print(f"WARNING: Save backup not found at {SAVE_BACKUP_PATH}")
+
+    if STATE_BACKUP_PATH and os.path.exists(STATE_BACKUP_PATH):
+        shutil.copy(STATE_BACKUP_PATH, STATE_PATH)
+        print("Restored working .ss1 from backup.")
+    elif STATE_BACKUP_PATH:
+        print(f"WARNING: State backup not found at {STATE_BACKUP_PATH}")
+
 def open_summary_for_check():
     """Navigate through the in-game menus until the Pokémon summary screen is shown."""
     if MGBA_CONTROL_MODE.lower() == "http":
@@ -512,6 +529,7 @@ attempt = 1
 while True:
     wait_if_paused()
     print(f"Attempt {attempt} started.")
+    restore_working_files()
     
     # ---- Step 1: Load ROM, advance by a frame, save, then close mGBA ----
     focus_and_load_rom()
@@ -566,14 +584,9 @@ while True:
             os.makedirs(JUST_IN_CASE_DIR)
         trial_num = get_trial_number()
         non_shiny_rename = os.path.join(JUST_IN_CASE_DIR, f"JirachiTrial{trial_num}.sav")
-        shutil.copy(SAVE_PATH, non_shiny_rename)
-        print(f"Copied non-shiny to {non_shiny_rename}")
-        backup_source = os.path.join(os.path.dirname(SAVE_PATH), "Pokemon - Sapphire Version (USA, Europe).sav.bak")
-        if os.path.exists(backup_source):
-            shutil.copy(backup_source, SAVE_PATH)
-            print("Restored working save from backup.")
-        else:
-            print(f"WARNING: Backup file missing at {backup_source}")
+        shutil.move(SAVE_PATH, non_shiny_rename)
+        print(f"Moved non-shiny to {non_shiny_rename}")
+        restore_working_files()
     
     attempt += 1
     time.sleep(1)  # Brief pause between cycles
