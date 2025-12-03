@@ -408,22 +408,26 @@ def run_cooldown_rom():
         time.sleep(1.5)
         MGBA_HTTP_CLIENT.reset_core()
         time.sleep(0.5)
+        load_save_from_title(no_save=True)
         print(f"Loaded cooldown ROM {ROM_PATH_COOLDOWN}.")
     else:
         # Fallback: do nothing if no cooldown ROM.
         pass
 
 
-def load_save_from_title():
+def load_save_from_title(no_save=False):
     """Automate skipping intros and selecting Continue from the title screen after ROM load."""
     if MGBA_CONTROL_MODE.lower() == "http":
         time.sleep(5.0)
         for _ in range(12):
             http_tap(GBA_MENU_BUTTON, count=1, delay=0.2)
         time.sleep(1.0)
-        http_tap(GBA_ACTION_BUTTON, count=1, delay=0.3)
-        time.sleep(10.0)
-        print("Loaded save from title screen via HTTP.")
+        if not no_save:
+            http_tap(GBA_ACTION_BUTTON, count=1, delay=0.3)
+            time.sleep(10.0)
+            print("Loaded save from title screen via HTTP.")
+        else:
+            print("Cooldown ROM started; skipping save load.")
         return
 
     pyautogui.click(*MGBA_CLICK)  # Ensure focus
@@ -697,4 +701,5 @@ while True:
         archive_old_trials()
     
     attempt += 1
+    _save_menu_needs_navigation = False
     time.sleep(1)  # Brief pause between cycles
