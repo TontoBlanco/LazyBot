@@ -10,6 +10,7 @@ import datetime
 import numpy as np
 import psutil
 import requests
+import subprocess
 
 # =====================================
 # CONFIGURATION – EDIT THESE VALUES
@@ -30,6 +31,7 @@ DOLPHIN_SCREEN_BBOX = (100, 100, 580, 420)  # Dolphin game screen bbox - tune (u
 MGBA_SCREEN_BBOX = (0, 30, 240, 190)  # mGBA game screen bbox - tune for your window (GBA is 240x160)
 TAG_AREA_REL = (71, 228, 91, 248)  # Tag area relative to SCREEN_BBOX - retune for mGBA if needed
 DOLPHIN_EXE_NAME = "Dolphin.exe"  # For killing if needed
+DOLPHIN_EXE_PATH = r"C:\Dolphin\Dolphin.exe"  # Path to Dolphin executable
 MGBA_CONTROL_MODE = "http"  # Options: "http" to use mGBA-http, "gui" to fall back to pyautogui
 MGBA_HTTP_BASE_URL = "http://localhost:5000"
 MGBA_HTTP_TIMEOUT = 5.0
@@ -357,6 +359,17 @@ def close_dolphin_game():
     kill_dolphin()
     print("Closed game in Dolphin.")
 
+
+def ensure_dolphin_running():
+    """Launch Dolphin if it is not already running."""
+    if any(proc.name() == DOLPHIN_EXE_NAME for proc in psutil.process_iter()):
+        return
+    if not os.path.exists(DOLPHIN_EXE_PATH):
+        raise RuntimeError(f"Dolphin executable not found at {DOLPHIN_EXE_PATH}. Update DOLPHIN_EXE_PATH in config.")
+    subprocess.Popen([DOLPHIN_EXE_PATH], cwd=os.path.dirname(DOLPHIN_EXE_PATH), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    time.sleep(5)
+    print("Launched Dolphin executable.")
+
 def close_mgba_rom():
     """Reset/close mGBA so the save file is flushed before leaving."""
     if MGBA_CONTROL_MODE.lower() == "http":
@@ -516,6 +529,7 @@ while True:
     
     # ---- Step 3: Launch the ISO and run the scripted transfer ----
     wait_if_paused()
+    ensure_dolphin_running()
     focus_and_load_iso()
     
     # ---- Step 4: Execute the menu rhythm that initiates the Jirachi gift ----
