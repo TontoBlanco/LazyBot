@@ -506,8 +506,9 @@ while True:
     shutil.copy(DOLPHIN_SAV_PATH, SAVE_PATH)
     print("Copied Dolphin save back to mGBA path.")
     
-    # ---- Step 7: Reopen the ROM in mGBA to examine the result ----
+    # ---- Step 7: Reset mGBA so the copied .sav loads ----
     wait_if_paused()
+    close_mgba_rom()
     focus_and_load_rom_from_save()
     load_save_from_title()
     
