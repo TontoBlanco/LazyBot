@@ -257,10 +257,11 @@ def save_at_new_frame():
     """Perform the in-game save routine so the new frame lands on disk."""
     if MGBA_CONTROL_MODE.lower() == "http":
         sequence = [
-            (GBA_MENU_BUTTON, 1, 0.4),  # Open pause menu
-            ("Down", GBA_SAVE_MENU_DOWN_PRESSES, 0.25),  # Navigate to Save
-            (GBA_ACTION_BUTTON, 1, 0.6),
-            (GBA_ACTION_BUTTON, 1, 0.6),  # Confirm save prompts
+            (GBA_MENU_BUTTON, 1, 0.5),  # Open pause menu
+            ("Down", GBA_SAVE_MENU_DOWN_PRESSES, 0.5),  # Navigate to Save
+            (GBA_ACTION_BUTTON, 1, 1.5),
+            (GBA_ACTION_BUTTON, 1, 1.5),
+            (GBA_ACTION_BUTTON, 1, 10),  # Confirm save prompts
         ]
         http_sequence(sequence)
         time.sleep(1.5)
