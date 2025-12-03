@@ -333,11 +333,15 @@ def auto_transfer_dolphin():
 def close_dolphin_game():
     """Exit the currently running Dolphin game via on-screen hotkeys."""
     pyautogui.click(*DOLPHIN_CLICK)  # Ensure focus
-    time.sleep(10)
+    time.sleep(2)
     pyautogui.press('-')
-    time.sleep(10)
+    time.sleep(2)
     pyautogui.press('space')
-    time.sleep(10)
+    time.sleep(5)
+    # Fallback to Alt+F4 to guarantee the emulator closes
+    send_hotkey('alt', 'f4')
+    time.sleep(3)
+    kill_dolphin()
     print("Closed game in Dolphin.")
 
 def close_mgba_rom():
