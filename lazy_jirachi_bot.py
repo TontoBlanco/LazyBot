@@ -286,12 +286,6 @@ def advance_frame():
         print("Advanced frame in mGBA via HTTP.")
         return
 
-    pyautogui.click(*MGBA_CLICK)  # Ensure focus
-    time.sleep(10)
-    pyautogui.press('n')
-    time.sleep(10)
-    print("Advanced frame in mGBA.")
-
 def save_at_new_frame():
     """Perform the in-game save routine so the new frame lands on disk."""
     global _save_menu_needs_navigation
@@ -322,8 +316,7 @@ def save_at_new_frame():
         time.sleep(10)
     pyautogui.press('enter')
     time.sleep(10)
-    if _save_menu_needs_navigation:
-        pyautogui.press('down', presses=GBA_SAVE_MENU_DOWN_PRESSES)
+    pyautogui.press('down', presses=GBA_SAVE_MENU_DOWN_PRESSES)
     time.sleep(10)
     pyautogui.press('x')
     time.sleep(10)
