@@ -628,7 +628,6 @@ print("Position mGBA top-left, Dolphin right. Emulators open but unloaded.")
 print("=================================")
 print(f"Debug: SAVE_PATH is {SAVE_PATH}, exists: {os.path.exists(SAVE_PATH)}")
 print(f"Debug: ORIGINAL_BACKUP is {ORIGINAL_BACKUP}, exists: {os.path.exists(ORIGINAL_BACKUP)}")
-kill_mgba()
 restore_working_files()
 input("Press Enter to start...")
 
