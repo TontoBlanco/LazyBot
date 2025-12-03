@@ -638,6 +638,20 @@ def archive_old_trials():
 
     print(f"Archived {len(files_to_archive)} trial saves to {archive_path}")
 
+
+def copy_save_to_dolphin():
+    """Copy current working .sav into the configured Dolphin save path."""
+    if not os.path.exists(SAVE_PATH):
+        raise FileNotFoundError(f"Working save not found at {SAVE_PATH}")
+    os.makedirs(os.path.dirname(DOLPHIN_SAV_PATH), exist_ok=True)
+    if os.path.exists(DOLPHIN_SAV_PATH):
+        try:
+            os.remove(DOLPHIN_SAV_PATH)
+        except OSError as exc:
+            print(f"WARNING: Unable to remove existing Dolphin save ({DOLPHIN_SAV_PATH}): {exc}")
+    shutil.copy2(SAVE_PATH, DOLPHIN_SAV_PATH)
+    print(f"Copied working save to Dolphin path: {DOLPHIN_SAV_PATH}")
+
 # =====================================
 # MAIN BOT LOOP
 # =====================================
@@ -667,12 +681,10 @@ while True:
     run_cooldown_rom()
     
     # ---- Step 2: Move the fresh save into Dolphin's shared GBA slot ----
-    if os.path.exists(SAVE_PATH):
-        shutil.copy(SAVE_PATH, DOLPHIN_SAV_TEMP)
-        shutil.move(DOLPHIN_SAV_TEMP, DOLPHIN_SAV_PATH)
-        print("Moved save to Dolphin path.")
-    else:
-        print("ERROR: Save file not found after save - check mGBA settings.")
+    try:
+        copy_save_to_dolphin()
+    except Exception as exc:
+        print(f"ERROR: Failed to copy save to Dolphin path: {exc}")
         break
     
     # ---- Step 3: Launch the ISO and run the scripted transfer ----
