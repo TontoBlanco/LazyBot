@@ -40,6 +40,7 @@ GBA_ACTION_BUTTON = "A"
 GBA_BACK_BUTTON = "B"
 GBA_SAVE_MENU_DOWN_PRESSES = 5  # Number of downs needed to highlight Save
 PAUSE_SENTINEL_PATH = os.path.join(os.getcwd(), "lazy_bot.pause")
+_save_menu_needs_navigation = True
 
 # =====================================
 # mGBA-http CLIENT
@@ -255,19 +256,24 @@ def advance_frame():
 
 def save_at_new_frame():
     """Perform the in-game save routine so the new frame lands on disk."""
+    global _save_menu_needs_navigation
     if MGBA_CONTROL_MODE.lower() == "http":
         sequence = [
-            (GBA_MENU_BUTTON, 1, 0.5),  # Open pause menu
-            ("Down", GBA_SAVE_MENU_DOWN_PRESSES, 0.5),  # Navigate to Save
-            (GBA_ACTION_BUTTON, 1, 1.5),
-            (GBA_ACTION_BUTTON, 1, 1.5),
-            (GBA_ACTION_BUTTON, 1, 10),  # Confirm save prompts
+            (GBA_MENU_BUTTON, 1, 0.5),
         ]
+        if _save_menu_needs_navigation:
+            sequence.append(("Down", GBA_SAVE_MENU_DOWN_PRESSES, 0.5))
+        sequence.extend([
+            (GBA_ACTION_BUTTON, 1, 1.5),
+            (GBA_ACTION_BUTTON, 1, 1.5),
+            (GBA_ACTION_BUTTON, 1, 10),
+        ])
         http_sequence(sequence)
         time.sleep(1.5)
         if STATE_PATH:
             MGBA_HTTP_CLIENT.save_state_file(STATE_PATH)
         time.sleep(10)
+        _save_menu_needs_navigation = False
         print("Saved in mGBA via HTTP.")
         return
 
@@ -278,7 +284,8 @@ def save_at_new_frame():
         time.sleep(10)
     pyautogui.press('enter')
     time.sleep(10)
-    pyautogui.press('down', presses=5)
+    if _save_menu_needs_navigation:
+        pyautogui.press('down', presses=GBA_SAVE_MENU_DOWN_PRESSES)
     time.sleep(10)
     pyautogui.press('x')
     time.sleep(10)
@@ -286,6 +293,7 @@ def save_at_new_frame():
     time.sleep(10)
     time.sleep(2)  # Wait for save
     time.sleep(10)
+    _save_menu_needs_navigation = False
     print("Saved in mGBA.")
 
     # Alternative sequence if 'x' doesn't work (uncomment if needed):
