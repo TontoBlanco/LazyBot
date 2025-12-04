@@ -453,14 +453,8 @@ def restore_working_files():
     shutil.copy(SAVE_BACKUP_PATH, SAVE_PATH)
     print("Restored working .sav from backup.")
 
-    if STATE_BACKUP_PATH:
-        if not os.path.exists(STATE_BACKUP_PATH):
-            if os.path.exists(STATE_PATH):
-                shutil.copy(STATE_PATH, STATE_BACKUP_PATH)
-                print("Created .ss1 backup from current working file.")
-            else:
-                print(f"WARNING: State backup not found at {STATE_BACKUP_PATH}")
-                return
+    # Only restore the .ss1 if needed (optional). Normally we keep advancing the working copy.
+    if STATE_BACKUP_PATH and os.path.exists(STATE_BACKUP_PATH):
         shutil.copy(STATE_BACKUP_PATH, STATE_PATH)
         print("Restored working .ss1 from backup.")
 
@@ -741,7 +735,8 @@ while True:
         archive_old_trials()
         elapsed = time.time() - attempt_started_at
         print(f"[Attempt {attempt}] Completed (not shiny) in {elapsed:.1f}s\n")
-    
+        restore_working_files()
+
     attempt += 1
     _save_menu_needs_navigation = False
     time.sleep(1)  # Brief pause between cycles
