@@ -686,6 +686,9 @@ while True:
     run_cooldown_rom()
     
     # ---- Step 2: Move the fresh save into Dolphin's shared GBA slot ----
+    if not os.path.exists(SAVE_PATH):
+        print("Working save missing after cooldown; restoring from backup.")
+        restore_working_files()
     try:
         copy_save_to_dolphin()
     except Exception as exc:
