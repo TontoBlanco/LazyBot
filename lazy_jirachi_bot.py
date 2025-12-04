@@ -98,10 +98,6 @@ class MgbaHttpClient:
         params = {"path": state_path, "flags": flags}
         return self._request("post", "/core/savestatefile", params=params)
 
-    def load_save_file(self, save_path):
-        params = {"path": save_path}
-        return self._request("post", "/core/loadsavefile", params=params)
-
     def tap_button(self, button):
         return self._request("post", "/mgba-http/button/tap", params={"button": button})
 
@@ -331,17 +327,6 @@ def archive_non_shiny_save(trial_num):
     return destination
 
 
-def inject_save_into_mgba(save_path=SAVE_PATH):
-    """Use the HTTP endpoint to push a .sav directly into the running core."""
-    if MGBA_CONTROL_MODE.lower() != "http":
-        return
-    if not os.path.exists(save_path):
-        raise FileNotFoundError(f"Cannot inject missing save file: {save_path}")
-    _ensure_http_client()
-    MGBA_HTTP_CLIENT.load_save_file(save_path)
-    print("Injected SAVE_PATH via /core/loadsavefile.")
-
-
 def load_save_from_title(no_save=False):
     """
     Navigate the title screen to load the save file.
@@ -371,11 +356,10 @@ def load_save_from_title(no_save=False):
 
 
 def run_cooldown_rom(duration=COOLDOWN_SLEEP_SECONDS):
-    """Optionally swap to a cooldown ROM between attempts."""
+    """Swap to a cooldown ROM so mGBA releases the Sapphire save file."""
     if not COOLDOWN_ROM_PATH:
         return
     try:
-        load_save_from_title(no_save=True)
         focus_and_load_rom(rom_path=COOLDOWN_ROM_PATH, load_state=False, state_path=None)
         print(f"Loaded cooldown ROM {COOLDOWN_ROM_PATH}.")
         if duration and duration > 0:
@@ -514,21 +498,6 @@ def close_dolphin_game():
     time.sleep(10)
     print("Closed game in Dolphin.")
 
-def close_mgba_rom():
-    """Reset/close mGBA so the save file is flushed before leaving."""
-    if MGBA_CONTROL_MODE.lower() == "http":
-        _ensure_http_client()
-        MGBA_HTTP_CLIENT.reset_core()
-        time.sleep(0.5)
-        print("Reset/closed ROM in mGBA via HTTP.")
-        return
-
-    pyautogui.click(*MGBA_CLICK)  # Ensure focus
-    time.sleep(10)
-    send_hotkey('ctrl', 'k')
-    time.sleep(10)
-    print("Closed ROM in mGBA.")
-
 def open_summary_for_check():
     """Navigate through the in-game menus until the Pokémon summary screen is shown."""
     if MGBA_CONTROL_MODE.lower() == "http":
@@ -645,13 +614,12 @@ while True:
     focus_and_load_rom()
     advance_frame()
     save_at_new_frame()
-    close_mgba_rom()
+    run_cooldown_rom()
     try:
         staged_pre_transfer_save = stage_pre_transfer_save(attempt_label)
     except Exception as err:
         print(f"ERROR: Failed to stage advanced-frame save: {err}")
         break
-    run_cooldown_rom()
 
     # ---- Step 2: Move the fresh save into Dolphin's shared GBA slot ----
     try:
@@ -683,14 +651,7 @@ while True:
         break
 
     # ---- Step 7: Reopen the ROM in mGBA to examine the result ----
-    close_mgba_rom()
-    try:
-        inject_save_into_mgba()
-    except FileNotFoundError as err:
-        print(f"ERROR: Could not inject save into mGBA: {err}")
-        try_restore_staged_save(staged_pre_transfer_save)
-        break
-    focus_and_load_rom()
+    focus_and_load_rom(load_state=False)
     load_save_from_title()
 
     # ---- Step 8: Inspect the summary page to check the ribbon colour ----
@@ -706,7 +667,6 @@ while True:
         break
 
     # ---- Step 9: Not shiny – archive the save for reference ----
-    close_mgba_rom()
     run_cooldown_rom()
     trial_num = get_trial_number()
     try:
