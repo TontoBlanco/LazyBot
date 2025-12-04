@@ -677,7 +677,6 @@ while True:
     save_at_new_frame()
     close_mgba_rom()
     update_working_backups()
-    run_cooldown_rom()
     
     # ---- Step 2: Move the fresh save into Dolphin's shared GBA slot ----
     if not os.path.exists(SAVE_PATH):
