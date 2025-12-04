@@ -10,6 +10,7 @@ import datetime
 import numpy as np
 import psutil
 import requests
+import subprocess
 
 # =====================================
 # CONFIGURATION – EDIT THESE VALUES
@@ -23,6 +24,7 @@ DOLPHIN_SAV_TEMP = os.path.join(os.path.dirname(DOLPHIN_SAV_PATH), "~lazy_bot_sa
 BACKUP_DIR = r"C:\Users\colem\OneDrive\Desktop\Gameboy Backup"  # Backup folder
 ORIGINAL_BACKUP = os.path.join(BACKUP_DIR, "raw_shiny_target_time.sav")  # Pre-transfer backup
 STATE_BACKUP_PATH = os.path.join(BACKUP_DIR, "raw_shiny_target_time.ss1")
+PRE_TRANSFER_STAGE_PATH = os.path.join(BACKUP_DIR, "~lazy_bot_pre_transfer.sav")
 JUST_IN_CASE_DIR = r"C:\mGBA\Just_In_Case"  # Non-shiny folder
 LOG_FILE = "seed_log.txt"  # Seed log
 DOLPHIN_CLICK = (1932, 1086)  # Dolphin focus click - updated
@@ -43,6 +45,8 @@ GBA_SAVE_MENU_DOWN_PRESSES = 5  # Number of downs needed to highlight Save
 PAUSE_SENTINEL_PATH = os.path.join(os.getcwd(), "lazy_bot.pause")
 COOLDOWN_ROM_PATH = r"C:\mGBA\ROMs\PokemonFireRed.gba"
 COOLDOWN_SLEEP_SECONDS = 2.0
+MGBA_EXE_PATH = None  # Optional path to mGBA.exe if auto-launch desired
+MGBA_PROCESS_NAME = "mGBA.exe"
 
 # =====================================
 # mGBA-http CLIENT
@@ -207,6 +211,35 @@ def type_via_clipboard(text):
     send_hotkey('ctrl', 'v')
 
 
+def _process_running(process_name):
+    if not process_name:
+        return False
+    target = process_name.lower()
+    for proc in psutil.process_iter(attrs=["name"]):
+        name = proc.info.get("name")
+        if name and name.lower() == target:
+            return True
+    return False
+
+
+def launch_mgba_if_closed():
+    """Start mGBA if it's not already running (GUI automation mode only)."""
+    if MGBA_CONTROL_MODE.lower() == "http":
+        return
+    if _process_running(MGBA_PROCESS_NAME):
+        return
+    if MGBA_EXE_PATH and os.path.exists(MGBA_EXE_PATH):
+        try:
+            subprocess.Popen([MGBA_EXE_PATH])
+            time.sleep(5)
+            print("Launched mGBA executable.")
+            return
+        except Exception as exc:
+            print(f"Failed to auto-launch mGBA: {exc}")
+    print("mGBA appears closed; please launch it manually.")
+    time.sleep(2)
+
+
 def _ensure_dir(path):
     if path and not os.path.exists(path):
         os.makedirs(path)
@@ -216,6 +249,11 @@ def ensure_working_save_present():
     """Restore the working save from backup if the main slot is empty."""
     if os.path.exists(SAVE_PATH):
         return
+    if os.path.exists(PRE_TRANSFER_STAGE_PATH):
+        _ensure_dir(os.path.dirname(SAVE_PATH))
+        shutil.copy2(PRE_TRANSFER_STAGE_PATH, SAVE_PATH)
+        print(f"Restored working save from staged backup: {PRE_TRANSFER_STAGE_PATH}")
+        return
     if os.path.exists(ORIGINAL_BACKUP):
         _ensure_dir(os.path.dirname(SAVE_PATH))
         shutil.copy2(ORIGINAL_BACKUP, SAVE_PATH)
@@ -224,19 +262,44 @@ def ensure_working_save_present():
     raise FileNotFoundError(f"Working save not found at {SAVE_PATH} and backup {ORIGINAL_BACKUP} missing.")
 
 
-def _copy_with_log(src, dest, message):
-    if not src or not os.path.exists(src):
+def stage_pre_transfer_save(attempt_label, stage_path=PRE_TRANSFER_STAGE_PATH):
+    """Copy the freshly advanced frame save into a safe staging slot."""
+    if not os.path.exists(SAVE_PATH):
+        raise FileNotFoundError(f"Cannot stage missing working save at {SAVE_PATH}")
+    _ensure_dir(os.path.dirname(stage_path))
+    shutil.copy2(SAVE_PATH, stage_path)
+    print(f"{attempt_label} staged advanced-frame save at {stage_path}")
+    return stage_path
+
+
+def restore_pre_transfer_save(stage_path=PRE_TRANSFER_STAGE_PATH):
+    """Bring the advanced frame save back into the mGBA slot."""
+    if not stage_path or not os.path.exists(stage_path):
+        raise FileNotFoundError(f"Staged pre-transfer save not found at {stage_path}")
+    _ensure_dir(os.path.dirname(SAVE_PATH))
+    shutil.copy2(stage_path, SAVE_PATH)
+    print(f"Restored advanced-frame save from {stage_path} to {SAVE_PATH}")
+
+
+def try_restore_staged_save(stage_path):
+    """Best-effort helper for recovering the staged save when errors occur."""
+    if not stage_path:
         return
-    _ensure_dir(os.path.dirname(dest))
-    shutil.copy2(src, dest)
-    print(message)
+    try:
+        restore_pre_transfer_save(stage_path)
+    except FileNotFoundError as exc:
+        print(f"WARNING: Could not restore staged save: {exc}")
 
 
-def update_primary_backups():
-    """Persist the freshly saved attempt into the configured backups."""
-    _copy_with_log(SAVE_PATH, ORIGINAL_BACKUP, "Updated .sav backup with latest working file.")
-    if STATE_PATH and STATE_BACKUP_PATH:
-        _copy_with_log(STATE_PATH, STATE_BACKUP_PATH, "Updated .ss1 backup with latest working file.")
+def clear_working_save_slot():
+    """Remove the save currently sitting in the mGBA directory."""
+    if not os.path.exists(SAVE_PATH):
+        return
+    try:
+        os.remove(SAVE_PATH)
+        print(f"Cleared working save slot at {SAVE_PATH} to receive post-transfer save.")
+    except OSError as exc:
+        print(f"WARNING: Unable to clear working save slot: {exc}")
 
 
 def copy_save_to_dolphin():
@@ -261,8 +324,11 @@ def archive_non_shiny_save(trial_num):
     """Keep a copy of non-shiny results for future reference."""
     _ensure_dir(JUST_IN_CASE_DIR)
     destination = os.path.join(JUST_IN_CASE_DIR, f"JirachiTrial{trial_num}.sav")
-    shutil.copy2(SAVE_PATH, destination)
+    if not os.path.exists(SAVE_PATH):
+        raise FileNotFoundError(f"Cannot archive missing save at {SAVE_PATH}")
+    shutil.move(SAVE_PATH, destination)
     print(f"Moved non-shiny to {destination}")
+    return destination
 
 
 def inject_save_into_mgba(save_path=SAVE_PATH):
@@ -571,20 +637,29 @@ while True:
     attempt_label = f"[Attempt {attempt}]"
     print(f"{attempt_label} Started")
     attempt_start = time.time()
+    staged_pre_transfer_save = None
+
+    launch_mgba_if_closed()
 
     # ---- Step 1: Load ROM, advance by a frame, save, then close mGBA ----
     focus_and_load_rom()
     advance_frame()
     save_at_new_frame()
     close_mgba_rom()
-    update_primary_backups()
+    try:
+        staged_pre_transfer_save = stage_pre_transfer_save(attempt_label)
+    except Exception as err:
+        print(f"ERROR: Failed to stage advanced-frame save: {err}")
+        break
     run_cooldown_rom()
 
     # ---- Step 2: Move the fresh save into Dolphin's shared GBA slot ----
     try:
         copy_save_to_dolphin()
+        clear_working_save_slot()
     except FileNotFoundError as err:
         print(f"ERROR: Failed to copy save to Dolphin path: {err}")
+        try_restore_staged_save(staged_pre_transfer_save)
         break
 
     # ---- Step 3: Launch the ISO and run the scripted transfer ----
@@ -604,6 +679,7 @@ while True:
         copy_dolphin_save_back()
     except FileNotFoundError as err:
         print(f"ERROR: Failed to copy Dolphin save back: {err}")
+        try_restore_staged_save(staged_pre_transfer_save)
         break
 
     # ---- Step 7: Reopen the ROM in mGBA to examine the result ----
@@ -612,6 +688,7 @@ while True:
         inject_save_into_mgba()
     except FileNotFoundError as err:
         print(f"ERROR: Could not inject save into mGBA: {err}")
+        try_restore_staged_save(staged_pre_transfer_save)
         break
     focus_and_load_rom()
     load_save_from_title()
@@ -632,7 +709,17 @@ while True:
     close_mgba_rom()
     run_cooldown_rom()
     trial_num = get_trial_number()
-    archive_non_shiny_save(trial_num)
+    try:
+        archive_non_shiny_save(trial_num)
+    except FileNotFoundError as err:
+        print(f"ERROR: Failed to archive non-shiny save: {err}")
+        try_restore_staged_save(staged_pre_transfer_save)
+        break
+    try:
+        restore_pre_transfer_save(staged_pre_transfer_save)
+    except FileNotFoundError as err:
+        print(f"ERROR: Failed to restore advanced-frame save: {err}")
+        break
     elapsed = time.time() - attempt_start
     print(f"{attempt_label} Completed (not shiny) in {elapsed:.1f}s")
 
