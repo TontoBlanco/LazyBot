@@ -730,8 +730,8 @@ while True:
             os.makedirs(JUST_IN_CASE_DIR)
         trial_num = get_trial_number()
         non_shiny_rename = os.path.join(JUST_IN_CASE_DIR, f"JirachiTrial{trial_num}.sav")
-        shutil.move(SAVE_PATH, non_shiny_rename)
-        print(f"Moved non-shiny to {non_shiny_rename}")
+        shutil.copy2(SAVE_PATH, non_shiny_rename)
+        print(f"Archived non-shiny to {non_shiny_rename}")
         archive_old_trials()
         elapsed = time.time() - attempt_started_at
         print(f"[Attempt {attempt}] Completed (not shiny) in {elapsed:.1f}s\n")
